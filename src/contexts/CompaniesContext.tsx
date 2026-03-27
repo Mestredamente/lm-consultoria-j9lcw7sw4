@@ -19,12 +19,16 @@ export interface Company {
   employees: number
   email: string
   phone: string
+  createdAt: string
 }
 
 interface CompaniesContextType {
   companies: Company[]
-  addCompany: (company: Omit<Company, 'id'>) => Promise<void>
-  updateCompany: (id: string, data: Omit<Company, 'id'>) => Promise<void>
+  addCompany: (company: Omit<Company, 'id' | 'createdAt'>) => Promise<void>
+  updateCompany: (
+    id: string,
+    data: Omit<Company, 'id' | 'createdAt'>,
+  ) => Promise<void>
   deleteCompany: (id: string) => Promise<void>
   refreshCompanies: () => Promise<void>
   loading: boolean
@@ -66,6 +70,7 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
             employees: d.num_funcionarios || 0,
             email: d.email || '',
             phone: d.telefone || '',
+            createdAt: d.created_at || new Date().toISOString(),
           })),
         )
       }
@@ -86,7 +91,7 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchCompanies])
 
-  const addCompany = async (companyData: Omit<Company, 'id'>) => {
+  const addCompany = async (companyData: Omit<Company, 'id' | 'createdAt'>) => {
     if (!user) throw new Error('Usuário não autenticado')
 
     const { data, error: err } = await supabase
@@ -119,13 +124,17 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
           employees: data.num_funcionarios || 0,
           email: data.email || '',
           phone: data.telefone || '',
+          createdAt: data.created_at || new Date().toISOString(),
         },
         ...prev,
       ])
     }
   }
 
-  const updateCompany = async (id: string, data: Omit<Company, 'id'>) => {
+  const updateCompany = async (
+    id: string,
+    data: Omit<Company, 'id' | 'createdAt'>,
+  ) => {
     if (!user) throw new Error('Usuário não autenticado')
 
     const { error: err } = await supabase

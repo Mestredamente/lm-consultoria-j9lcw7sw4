@@ -18,12 +18,16 @@ export interface Contact {
   companyId: string
   linkedin?: string
   notes?: string
+  createdAt: string
 }
 
 interface ContactsContextType {
   contacts: Contact[]
-  addContact: (contact: Omit<Contact, 'id'>) => Promise<void>
-  updateContact: (id: string, contact: Omit<Contact, 'id'>) => Promise<void>
+  addContact: (contact: Omit<Contact, 'id' | 'createdAt'>) => Promise<void>
+  updateContact: (
+    id: string,
+    contact: Omit<Contact, 'id' | 'createdAt'>,
+  ) => Promise<void>
   deleteContact: (id: string) => Promise<void>
   refreshContacts: () => Promise<void>
   loading: boolean
@@ -64,6 +68,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
             companyId: d.empresa_id || '',
             linkedin: d.linkedin || '',
             notes: d.notas || '',
+            createdAt: d.created_at || new Date().toISOString(),
           })),
         )
       }
@@ -84,7 +89,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchContacts])
 
-  const addContact = async (contactData: Omit<Contact, 'id'>) => {
+  const addContact = async (contactData: Omit<Contact, 'id' | 'createdAt'>) => {
     if (!user) throw new Error('Usuário não autenticado')
 
     const { data, error: err } = await supabase
@@ -115,6 +120,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
           companyId: data.empresa_id || '',
           linkedin: data.linkedin || '',
           notes: data.notas || '',
+          createdAt: data.created_at || new Date().toISOString(),
         },
         ...prev,
       ])
@@ -123,7 +129,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
 
   const updateContact = async (
     id: string,
-    contactData: Omit<Contact, 'id'>,
+    contactData: Omit<Contact, 'id' | 'createdAt'>,
   ) => {
     if (!user) throw new Error('Usuário não autenticado')
 
