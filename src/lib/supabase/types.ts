@@ -721,6 +721,7 @@ export type Database = {
           acao: string
           ativo: boolean
           created_at: string
+          detalhes_acao: Json
           empresa_id: string | null
           gatilho: string
           id: string
@@ -731,6 +732,7 @@ export type Database = {
           acao: string
           ativo?: boolean
           created_at?: string
+          detalhes_acao?: Json
           empresa_id?: string | null
           gatilho: string
           id?: string
@@ -741,6 +743,7 @@ export type Database = {
           acao?: string
           ativo?: boolean
           created_at?: string
+          detalhes_acao?: Json
           empresa_id?: string | null
           gatilho?: string
           id?: string
@@ -2047,6 +2050,7 @@ export const Constants = {
 //   empresa_id: uuid (nullable)
 //   ativo: boolean (not null, default: true)
 //   created_at: timestamp with time zone (not null, default: now())
+//   detalhes_acao: jsonb (not null, default: '{}'::jsonb)
 // Table: historico_cobrancas
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -2970,6 +2974,37 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION invoke_executar_automacao()
+//   CREATE OR REPLACE FUNCTION public.invoke_executar_automacao()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//     req_id bigint;
+//     base_url text;
+//   BEGIN
+//     -- Known production edge function URL
+//     base_url := 'https://qkxjdsdvxxgtdmlivxue.supabase.co/functions/v1';
+//
+//     SELECT net.http_post(
+//         url:=(base_url || '/executar_automacao'),
+//         headers:='{"Content-Type": "application/json"}'::jsonb,
+//         body:=json_build_object(
+//             'type', TG_OP,
+//             'table', TG_TABLE_NAME,
+//             'record', row_to_json(NEW),
+//             'old_record', CASE WHEN TG_OP = 'UPDATE' THEN row_to_json(OLD) ELSE NULL END
+//         )::jsonb
+//     ) INTO req_id;
+//
+//     RETURN NEW;
+//   EXCEPTION WHEN OTHERS THEN
+//     RAISE WARNING 'invoke_executar_automacao failed: %', SQLERRM;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION log_audit_action()
 //   CREATE OR REPLACE FUNCTION public.log_audit_action()
 //    RETURNS trigger
@@ -3251,8 +3286,10 @@ export const Constants = {
 //   set_atividades_updated_at: CREATE TRIGGER set_atividades_updated_at BEFORE UPDATE ON public.atividades FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: contatos
 //   set_contatos_updated_at: CREATE TRIGGER set_contatos_updated_at BEFORE UPDATE ON public.contatos FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+//   trg_automacao_contatos: CREATE TRIGGER trg_automacao_contatos AFTER INSERT ON public.contatos FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
 // Table: empresas
 //   set_empresas_updated_at: CREATE TRIGGER set_empresas_updated_at BEFORE UPDATE ON public.empresas FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+//   trg_automacao_empresas: CREATE TRIGGER trg_automacao_empresas AFTER INSERT ON public.empresas FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
 // Table: estoque
 //   stock_movement_trigger: CREATE TRIGGER stock_movement_trigger AFTER INSERT OR UPDATE ON public.estoque FOR EACH ROW EXECUTE FUNCTION log_stock_movement()
 //   trigger_check_low_stock: CREATE TRIGGER trigger_check_low_stock AFTER INSERT OR UPDATE OF quantidade, quantidade_minima ON public.estoque FOR EACH ROW EXECUTE FUNCTION check_low_stock()
@@ -3263,6 +3300,8 @@ export const Constants = {
 // Table: oportunidades
 //   log_oportunidade_estagio_trigger: CREATE TRIGGER log_oportunidade_estagio_trigger AFTER INSERT OR UPDATE ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION log_oportunidade_estagio()
 //   set_oportunidades_updated_at: CREATE TRIGGER set_oportunidades_updated_at BEFORE UPDATE ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+//   trg_automacao_oportunidades_ins: CREATE TRIGGER trg_automacao_oportunidades_ins AFTER INSERT ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
+//   trg_automacao_oportunidades_upd: CREATE TRIGGER trg_automacao_oportunidades_upd AFTER UPDATE OF estagio ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
 
 // --- INDEXES ---
 // Table: atividades
