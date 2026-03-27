@@ -69,7 +69,7 @@ export default function Layout() {
             <div className="bg-black text-white p-1.5 rounded-lg">
               <Target className="w-5 h-5" />
             </div>
-            <span>CRM B2B</span>
+            <span>LM Consultoria</span>
           </Link>
           <button
             className="md:hidden text-gray-500 hover:text-gray-700"

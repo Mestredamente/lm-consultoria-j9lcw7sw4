@@ -684,6 +684,41 @@ export type Database = {
           },
         ]
       }
+      historico_oportunidades: {
+        Row: {
+          created_at: string
+          estagio_anterior: string | null
+          estagio_novo: string
+          id: string
+          oportunidade_id: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          estagio_anterior?: string | null
+          estagio_novo: string
+          id?: string
+          oportunidade_id: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          estagio_anterior?: string | null
+          estagio_novo?: string
+          id?: string
+          oportunidade_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'historico_oportunidades_oportunidade_id_fkey'
+            columns: ['oportunidade_id']
+            isOneToOne: false
+            referencedRelation: 'oportunidades'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       laudos: {
         Row: {
           conteudo: string
@@ -886,6 +921,7 @@ export type Database = {
           estagio: string
           id: string
           nome: string
+          notas_internas: string | null
           probabilidade_percentual: number | null
           responsavel_id: string
           updated_at: string
@@ -900,6 +936,7 @@ export type Database = {
           estagio?: string
           id?: string
           nome: string
+          notas_internas?: string | null
           probabilidade_percentual?: number | null
           responsavel_id: string
           updated_at?: string
@@ -914,6 +951,7 @@ export type Database = {
           estagio?: string
           id?: string
           nome?: string
+          notas_internas?: string | null
           probabilidade_percentual?: number | null
           responsavel_id?: string
           updated_at?: string
@@ -1824,6 +1862,13 @@ export const Constants = {
 //   conteudo: text (not null)
 //   status_envio: text (not null, default: 'enviado'::text)
 //   data_envio: timestamp with time zone (not null, default: now())
+// Table: historico_oportunidades
+//   id: uuid (not null, default: gen_random_uuid())
+//   oportunidade_id: uuid (not null)
+//   usuario_id: uuid (not null)
+//   estagio_anterior: text (nullable)
+//   estagio_novo: text (not null)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: laudos
 //   id: uuid (not null, default: gen_random_uuid())
 //   paciente_id: uuid (not null)
@@ -1873,6 +1918,7 @@ export const Constants = {
 //   descricao: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+//   notas_internas: text (nullable)
 // Table: pacientes
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -2067,6 +2113,10 @@ export const Constants = {
 //   FOREIGN KEY historico_mensagens_paciente_id_fkey: FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE
 //   PRIMARY KEY historico_mensagens_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY historico_mensagens_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: historico_oportunidades
+//   FOREIGN KEY historico_oportunidades_oportunidade_id_fkey: FOREIGN KEY (oportunidade_id) REFERENCES oportunidades(id) ON DELETE CASCADE
+//   PRIMARY KEY historico_oportunidades_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY historico_oportunidades_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: laudos
 //   FOREIGN KEY laudos_paciente_id_fkey: FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE
 //   PRIMARY KEY laudos_pkey: PRIMARY KEY (id)
@@ -2203,6 +2253,10 @@ export const Constants = {
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: historico_mensagens
 //   Policy "historico_mensagens_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+// Table: historico_oportunidades
+//   Policy "historico_oportunidades_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: laudos
@@ -2726,6 +2780,24 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION log_oportunidade_estagio()
+//   CREATE OR REPLACE FUNCTION public.log_oportunidade_estagio()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     IF TG_OP = 'INSERT' THEN
+//       INSERT INTO public.historico_oportunidades (oportunidade_id, usuario_id, estagio_novo)
+//       VALUES (NEW.id, NEW.responsavel_id, NEW.estagio);
+//     ELSIF TG_OP = 'UPDATE' AND NEW.estagio IS DISTINCT FROM OLD.estagio THEN
+//       INSERT INTO public.historico_oportunidades (oportunidade_id, usuario_id, estagio_anterior, estagio_novo)
+//       VALUES (NEW.id, NEW.responsavel_id, OLD.estagio, NEW.estagio);
+//     END IF;
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION log_stock_movement()
 //   CREATE OR REPLACE FUNCTION public.log_stock_movement()
 //    RETURNS trigger
@@ -2956,6 +3028,7 @@ export const Constants = {
 // Table: laudos
 //   audit_laudos_trigger: CREATE TRIGGER audit_laudos_trigger AFTER INSERT OR DELETE OR UPDATE ON public.laudos FOR EACH ROW EXECUTE FUNCTION log_audit_action()
 // Table: oportunidades
+//   log_oportunidade_estagio_trigger: CREATE TRIGGER log_oportunidade_estagio_trigger AFTER INSERT OR UPDATE ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION log_oportunidade_estagio()
 //   set_oportunidades_updated_at: CREATE TRIGGER set_oportunidades_updated_at BEFORE UPDATE ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 
 // --- INDEXES ---
