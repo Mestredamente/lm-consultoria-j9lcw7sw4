@@ -1,24 +1,85 @@
-/* Main App Component - Handles routing (using react-router-dom), query client and other providers - use this file to add all routes */
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import Index from './pages/Index'
+import Leads from './pages/Leads'
+import PlaceholderPage from './pages/PlaceholderPage'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 
-// ONLY IMPORT AND RENDER WORKING PAGES, NEVER ADD PLACEHOLDER COMPONENTS OR PAGES IN THIS FILE
-// AVOID REMOVING ANY CONTEXT PROVIDERS FROM THIS FILE (e.g. TooltipProvider, Toaster, Sonner)
-
 const App = () => (
-  <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+  <BrowserRouter
+    future={{ v7_startTransition: false, v7_relativeSplatPath: false }}
+  >
     <TooltipProvider>
       <Toaster />
       <Sonner />
       <Routes>
         <Route element={<Layout />}>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
+          <Route path="/leads" element={<Leads />} />
+          <Route
+            path="/pipeline"
+            element={
+              <PlaceholderPage
+                title="Pipeline"
+                description="Visualize o progresso dos seus negócios."
+              />
+            }
+          />
+          <Route
+            path="/activities"
+            element={
+              <PlaceholderPage
+                title="Atividades"
+                description="Gerencie suas tarefas e eventos."
+              />
+            }
+          />
+          <Route
+            path="/tasks"
+            element={
+              <PlaceholderPage
+                title="Tarefas"
+                description="Lista de tarefas pendentes."
+              />
+            }
+          />
+          <Route
+            path="/proposals"
+            element={
+              <PlaceholderPage
+                title="Propostas"
+                description="Gerencie orçamentos e propostas."
+              />
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <PlaceholderPage
+                title="Relatórios"
+                description="Análises e métricas de desempenho."
+              />
+            }
+          />
+          <Route
+            path="/founders"
+            element={<PlaceholderPage title="Fundadores" />}
+          />
+          <Route
+            path="/finance"
+            element={<PlaceholderPage title="Finanças" />}
+          />
+          <Route
+            path="/growth"
+            element={<PlaceholderPage title="Crescimento" />}
+          />
+          <Route
+            path="/projects"
+            element={<PlaceholderPage title="Projetos" />}
+          />
         </Route>
         <Route path="*" element={<NotFound />} />
       </Routes>
