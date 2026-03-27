@@ -14,6 +14,7 @@ import OpportunityDetails from './pages/OpportunityDetails'
 import Companies from './pages/Companies'
 import CompanyDetails from './pages/CompanyDetails'
 import Contacts from './pages/Contacts'
+import Activities from './pages/Activities'
 import PlaceholderPage from './pages/PlaceholderPage'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
@@ -22,6 +23,7 @@ import { AuthProvider, useAuth } from './hooks/use-auth'
 import { CompaniesProvider } from './contexts/CompaniesContext'
 import { ContactsProvider } from './contexts/ContactsContext'
 import { OportunidadesProvider } from './contexts/OportunidadesContext'
+import { ActivitiesProvider } from './contexts/ActivitiesContext'
 
 function ProtectedRoute() {
   const { user, loading } = useAuth()
@@ -43,85 +45,85 @@ const App = () => (
       <CompaniesProvider>
         <ContactsProvider>
           <OportunidadesProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <Routes>
-                <Route path="/auth" element={<Auth />} />
-                <Route element={<ProtectedRoute />}>
-                  <Route element={<Layout />}>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/leads" element={<Leads />} />
-                    <Route path="/leads/:id" element={<OpportunityDetails />} />
-                    <Route path="/contacts" element={<Contacts />} />
-                    <Route path="/companies" element={<Companies />} />
-                    <Route path="/companies/:id" element={<CompanyDetails />} />
-                    <Route
-                      path="/pipeline"
-                      element={
-                        <PlaceholderPage
-                          title="Pipeline"
-                          description="Visualize o progresso dos seus negócios."
-                        />
-                      }
-                    />
-                    <Route
-                      path="/activities"
-                      element={
-                        <PlaceholderPage
-                          title="Atividades"
-                          description="Gerencie suas tarefas e eventos."
-                        />
-                      }
-                    />
-                    <Route
-                      path="/tasks"
-                      element={
-                        <PlaceholderPage
-                          title="Tarefas"
-                          description="Lista de tarefas pendentes."
-                        />
-                      }
-                    />
-                    <Route
-                      path="/proposals"
-                      element={
-                        <PlaceholderPage
-                          title="Propostas"
-                          description="Gerencie orçamentos e propostas."
-                        />
-                      }
-                    />
-                    <Route
-                      path="/reports"
-                      element={
-                        <PlaceholderPage
-                          title="Relatórios"
-                          description="Análises e métricas de desempenho."
-                        />
-                      }
-                    />
-                    <Route
-                      path="/founders"
-                      element={<PlaceholderPage title="Fundadores" />}
-                    />
-                    <Route
-                      path="/finance"
-                      element={<PlaceholderPage title="Finanças" />}
-                    />
-                    <Route
-                      path="/growth"
-                      element={<PlaceholderPage title="Crescimento" />}
-                    />
-                    <Route
-                      path="/projects"
-                      element={<PlaceholderPage title="Projetos" />}
-                    />
+            <ActivitiesProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/auth" element={<Auth />} />
+                  <Route element={<ProtectedRoute />}>
+                    <Route element={<Layout />}>
+                      <Route path="/" element={<Index />} />
+                      <Route path="/leads" element={<Leads />} />
+                      <Route
+                        path="/leads/:id"
+                        element={<OpportunityDetails />}
+                      />
+                      <Route path="/contacts" element={<Contacts />} />
+                      <Route path="/companies" element={<Companies />} />
+                      <Route
+                        path="/companies/:id"
+                        element={<CompanyDetails />}
+                      />
+                      <Route path="/activities" element={<Activities />} />
+                      <Route
+                        path="/pipeline"
+                        element={
+                          <PlaceholderPage
+                            title="Pipeline"
+                            description="Visualize o progresso dos seus negócios."
+                          />
+                        }
+                      />
+                      <Route
+                        path="/tasks"
+                        element={
+                          <PlaceholderPage
+                            title="Tarefas"
+                            description="Lista de tarefas pendentes."
+                          />
+                        }
+                      />
+                      <Route
+                        path="/proposals"
+                        element={
+                          <PlaceholderPage
+                            title="Propostas"
+                            description="Gerencie orçamentos e propostas."
+                          />
+                        }
+                      />
+                      <Route
+                        path="/reports"
+                        element={
+                          <PlaceholderPage
+                            title="Relatórios"
+                            description="Análises e métricas de desempenho."
+                          />
+                        }
+                      />
+                      <Route
+                        path="/founders"
+                        element={<PlaceholderPage title="Fundadores" />}
+                      />
+                      <Route
+                        path="/finance"
+                        element={<PlaceholderPage title="Finanças" />}
+                      />
+                      <Route
+                        path="/growth"
+                        element={<PlaceholderPage title="Crescimento" />}
+                      />
+                      <Route
+                        path="/projects"
+                        element={<PlaceholderPage title="Projetos" />}
+                      />
+                    </Route>
                   </Route>
-                </Route>
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </TooltipProvider>
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </TooltipProvider>
+            </ActivitiesProvider>
           </OportunidadesProvider>
         </ContactsProvider>
       </CompaniesProvider>

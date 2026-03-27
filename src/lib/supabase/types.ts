@@ -142,6 +142,83 @@ export type Database = {
         }
         Relationships: []
       }
+      atividades: {
+        Row: {
+          contato_id: string | null
+          created_at: string
+          data_agendada: string | null
+          data_conclusao: string | null
+          descricao: string | null
+          empresa_id: string | null
+          id: string
+          oportunidade_id: string | null
+          responsavel_id: string
+          status: string
+          tipo: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          contato_id?: string | null
+          created_at?: string
+          data_agendada?: string | null
+          data_conclusao?: string | null
+          descricao?: string | null
+          empresa_id?: string | null
+          id?: string
+          oportunidade_id?: string | null
+          responsavel_id: string
+          status?: string
+          tipo: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          contato_id?: string | null
+          created_at?: string
+          data_agendada?: string | null
+          data_conclusao?: string | null
+          descricao?: string | null
+          empresa_id?: string | null
+          id?: string
+          oportunidade_id?: string | null
+          responsavel_id?: string
+          status?: string
+          tipo?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'atividades_contato_id_fkey'
+            columns: ['contato_id']
+            isOneToOne: false
+            referencedRelation: 'contatos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'atividades_empresa_id_fkey'
+            columns: ['empresa_id']
+            isOneToOne: false
+            referencedRelation: 'empresas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'atividades_oportunidade_id_fkey'
+            columns: ['oportunidade_id']
+            isOneToOne: false
+            referencedRelation: 'oportunidades'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'atividades_responsavel_id_fkey'
+            columns: ['responsavel_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       avaliacoes: {
         Row: {
           agendamento_id: string | null
@@ -1751,6 +1828,20 @@ export const Constants = {
 //   session_value: numeric (not null)
 //   status: text (not null, default: 'scheduled'::text)
 //   user_id: uuid (nullable)
+// Table: atividades
+//   id: uuid (not null, default: gen_random_uuid())
+//   tipo: text (not null)
+//   titulo: text (not null)
+//   descricao: text (nullable)
+//   data_agendada: timestamp with time zone (nullable)
+//   data_conclusao: timestamp with time zone (nullable)
+//   status: text (not null, default: 'Agendada'::text)
+//   empresa_id: uuid (nullable)
+//   contato_id: uuid (nullable)
+//   oportunidade_id: uuid (nullable)
+//   responsavel_id: uuid (not null)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: avaliacoes
 //   id: uuid (not null, default: gen_random_uuid())
 //   paciente_id: uuid (not null)
@@ -2067,6 +2158,14 @@ export const Constants = {
 // Table: appointments
 //   PRIMARY KEY appointments_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY appointments_user_id_fkey: FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: atividades
+//   FOREIGN KEY atividades_contato_id_fkey: FOREIGN KEY (contato_id) REFERENCES contatos(id) ON DELETE SET NULL
+//   FOREIGN KEY atividades_empresa_id_fkey: FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE SET NULL
+//   FOREIGN KEY atividades_oportunidade_id_fkey: FOREIGN KEY (oportunidade_id) REFERENCES oportunidades(id) ON DELETE CASCADE
+//   PRIMARY KEY atividades_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY atividades_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id) ON DELETE CASCADE
+//   CHECK atividades_status_check: CHECK ((status = ANY (ARRAY['Agendada'::text, 'Concluída'::text, 'Cancelada'::text])))
+//   CHECK atividades_tipo_check: CHECK ((tipo = ANY (ARRAY['Ligação'::text, 'Email'::text, 'Reunião'::text, 'Tarefa Interna'::text, 'Acompanhamento'::text])))
 // Table: avaliacoes
 //   FOREIGN KEY avaliacoes_agendamento_id_fkey: FOREIGN KEY (agendamento_id) REFERENCES agendamentos(id) ON DELETE SET NULL
 //   CHECK avaliacoes_nota_check: CHECK (((nota >= 1) AND (nota <= 5)))
@@ -2198,6 +2297,10 @@ export const Constants = {
 //   Policy "authenticated_update" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: true
 //     WITH CHECK: true
+// Table: atividades
+//   Policy "atividades_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (responsavel_id = auth.uid())
+//     WITH CHECK: (responsavel_id = auth.uid())
 // Table: avaliacoes
 //   Policy "anon_avaliacoes_insert" (INSERT, PERMISSIVE) roles={anon}
 //     WITH CHECK: true
@@ -3016,6 +3119,8 @@ export const Constants = {
 // Table: agendamentos
 //   agendamento_confirmado_trigger: CREATE TRIGGER agendamento_confirmado_trigger AFTER UPDATE ON public.agendamentos FOR EACH ROW EXECUTE FUNCTION trigger_agendamento_confirmado()
 //   audit_agendamentos_trigger: CREATE TRIGGER audit_agendamentos_trigger AFTER INSERT OR DELETE OR UPDATE ON public.agendamentos FOR EACH ROW EXECUTE FUNCTION log_audit_action()
+// Table: atividades
+//   set_atividades_updated_at: CREATE TRIGGER set_atividades_updated_at BEFORE UPDATE ON public.atividades FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: contatos
 //   set_contatos_updated_at: CREATE TRIGGER set_contatos_updated_at BEFORE UPDATE ON public.contatos FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: empresas
@@ -3032,6 +3137,12 @@ export const Constants = {
 //   set_oportunidades_updated_at: CREATE TRIGGER set_oportunidades_updated_at BEFORE UPDATE ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 
 // --- INDEXES ---
+// Table: atividades
+//   CREATE INDEX idx_atividades_contato_id ON public.atividades USING btree (contato_id)
+//   CREATE INDEX idx_atividades_data_agendada ON public.atividades USING btree (data_agendada)
+//   CREATE INDEX idx_atividades_empresa_id ON public.atividades USING btree (empresa_id)
+//   CREATE INDEX idx_atividades_oportunidade_id ON public.atividades USING btree (oportunidade_id)
+//   CREATE INDEX idx_atividades_responsavel_id ON public.atividades USING btree (responsavel_id)
 // Table: financeiro
 //   CREATE UNIQUE INDEX financeiro_usuario_paciente_mes_ano_key ON public.financeiro USING btree (usuario_id, paciente_id, mes, ano)
 // Table: oportunidades

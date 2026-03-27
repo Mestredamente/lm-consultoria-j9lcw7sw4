@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/use-auth'
 import { useOportunidades } from '@/contexts/OportunidadesContext'
 import { useCompanies } from '@/contexts/CompaniesContext'
 import { useContacts } from '@/contexts/ContactsContext'
+import { useActivities, getActivityColor } from '@/contexts/ActivitiesContext'
 import { OportunidadeDialog } from '@/components/oportunidades/OportunidadeDialog'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -28,6 +29,7 @@ import {
   CheckCircle2,
   XCircle,
   ChevronRight,
+  Target,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -46,6 +48,7 @@ export default function OpportunityDetails() {
   const { oportunidades, updateOportunidade } = useOportunidades()
   const { companies } = useCompanies()
   const { contacts } = useContacts()
+  const { activities } = useActivities()
 
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [historico, setHistorico] = useState<any[]>([])
@@ -54,6 +57,7 @@ export default function OpportunityDetails() {
   const [savingNota, setSavingNota] = useState(false)
 
   const oportunidade = oportunidades.find((o) => o.id === id)
+  const relActivities = activities.filter((a) => a.oportunidade_id === id)
 
   useEffect(() => {
     if (oportunidade) setNota(oportunidade.notas_internas || '')
@@ -327,9 +331,17 @@ export default function OpportunityDetails() {
                   </TabsTrigger>
                   <TabsTrigger
                     value="activities"
-                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-black rounded-none px-0 pb-3 font-medium text-gray-500 data-[state=active]:text-gray-900"
+                    className="data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-black rounded-none px-0 pb-3 font-medium text-gray-500 data-[state=active]:text-gray-900 flex items-center gap-2"
                   >
                     Atividades Relacionadas
+                    {relActivities.length > 0 && (
+                      <Badge
+                        variant="secondary"
+                        className="bg-gray-100 text-gray-600 border-0 ml-1"
+                      >
+                        {relActivities.length}
+                      </Badge>
+                    )}
                   </TabsTrigger>
                   <TabsTrigger
                     value="notes"
@@ -409,20 +421,69 @@ export default function OpportunityDetails() {
 
                 <TabsContent
                   value="activities"
-                  className="m-0 p-8 outline-none h-full flex flex-col items-center justify-center min-h-[300px]"
+                  className="m-0 p-6 outline-none h-full flex flex-col min-h-[300px]"
                 >
-                  <div className="flex flex-col items-center justify-center text-center space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-2 shadow-sm">
-                      <Briefcase className="w-6 h-6 text-gray-400" />
+                  {relActivities.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center space-y-3">
+                      <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center mb-2 shadow-sm">
+                        <Briefcase className="w-6 h-6 text-gray-400" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-900">
+                        Nenhuma atividade
+                      </h3>
+                      <p className="text-sm text-gray-500 max-w-sm">
+                        Não há atividades agendadas ou concluídas para esta
+                        oportunidade.
+                      </p>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900">
-                      Nenhuma atividade
-                    </h3>
-                    <p className="text-sm text-gray-500 max-w-sm">
-                      Em breve você poderá vincular e gerenciar e-mails,
-                      reuniões e tarefas diretamente nesta aba.
-                    </p>
-                  </div>
+                  ) : (
+                    <div className="space-y-3 overflow-y-auto pr-2">
+                      {relActivities.map((act) => (
+                        <div
+                          key={act.id}
+                          className={cn(
+                            'p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm',
+                            getActivityColor(act.tipo),
+                          )}
+                        >
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge
+                                variant="outline"
+                                className="bg-white/50 text-xs border-current opacity-80"
+                              >
+                                {act.tipo}
+                              </Badge>
+                              <h4 className="font-bold text-sm leading-tight">
+                                {act.titulo}
+                              </h4>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs opacity-70 font-medium">
+                              <Calendar className="w-3 h-3" />
+                              {act.data_agendada
+                                ? format(
+                                    parseISO(act.data_agendada),
+                                    "dd 'de' MMM, HH:mm",
+                                    { locale: ptBR },
+                                  )
+                                : 'Sem data'}
+                            </div>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              'whitespace-nowrap self-start sm:self-auto',
+                              act.status === 'Concluída'
+                                ? 'bg-white/60'
+                                : 'bg-white border-transparent',
+                            )}
+                          >
+                            {act.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent
