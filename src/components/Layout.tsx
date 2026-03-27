@@ -1,26 +1,175 @@
-import { Outlet } from 'react-router-dom'
-import { Sidebar } from '@/components/Sidebar'
-import { Header } from '@/components/Header'
-import { LeadsProvider } from '@/contexts/LeadsContext'
-import { CompaniesProvider } from '@/contexts/CompaniesContext'
-import { ContactsProvider } from '@/contexts/ContactsContext'
+import React, { useState } from 'react'
+import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
+import {
+  LayoutDashboard,
+  Users,
+  Building2,
+  Target,
+  BarChart3,
+  LogOut,
+  Menu,
+  X,
+  Settings,
+  Bell,
+  Search,
+  Briefcase,
+  CheckSquare,
+  FileText,
+} from 'lucide-react'
+
+import { useAuth } from '@/hooks/use-auth'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
+
+const NAVIGATION = [
+  { name: 'Dashboard', href: '/', icon: LayoutDashboard },
+  { name: 'Pipeline', href: '/leads', icon: Target },
+  { name: 'Empresas', href: '/companies', icon: Building2 },
+  { name: 'Contatos', href: '/contacts', icon: Users },
+  { name: 'Propostas', href: '/proposals', icon: FileText },
+  { name: 'Tarefas', href: '/tasks', icon: CheckSquare },
+  { name: 'Atividades', href: '/activities', icon: Briefcase },
+  { name: 'Relatórios', href: '/reports', icon: BarChart3 },
+]
 
 export default function Layout() {
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const location = useLocation()
+  const navigate = useNavigate()
+  const { signOut, user } = useAuth()
+
+  const handleSignOut = async () => {
+    await signOut()
+    navigate('/auth')
+  }
+
   return (
-    <LeadsProvider>
-      <CompaniesProvider>
-        <ContactsProvider>
-          <div className="flex min-h-screen relative overflow-x-hidden">
-            <Sidebar />
-            <div className="flex-1 flex flex-col md:ml-20 transition-all duration-300">
-              <Header />
-              <main className="flex-1 p-6 md:p-10 pt-6">
-                <Outlet />
-              </main>
+    <div className="min-h-screen bg-gray-50/50 flex flex-col md:flex-row font-sans">
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={cn(
+          'fixed md:sticky top-0 z-50 h-screen w-64 bg-white border-r border-gray-100 flex flex-col transition-transform duration-300 ease-in-out shadow-sm md:shadow-none',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+        )}
+      >
+        <div className="h-16 flex items-center px-6 border-b border-gray-100 justify-between md:justify-center">
+          <Link
+            to="/"
+            className="flex items-center gap-2 font-bold text-xl text-gray-900 tracking-tight"
+          >
+            <div className="bg-black text-white p-1.5 rounded-lg">
+              <Target className="w-5 h-5" />
+            </div>
+            <span>CRM B2B</span>
+          </Link>
+          <button
+            className="md:hidden text-gray-500 hover:text-gray-700"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 scrollbar-thin scrollbar-thumb-gray-200">
+          <div className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Menu Principal
+          </div>
+          {NAVIGATION.map((item) => {
+            const isActive = location.pathname === item.href
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                  isActive
+                    ? 'bg-black text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+                )}
+                onClick={() => setSidebarOpen(false)}
+              >
+                <item.icon
+                  className={cn(
+                    'w-5 h-5',
+                    isActive ? 'text-white' : 'text-gray-500',
+                  )}
+                />
+                {item.name}
+              </Link>
+            )
+          })}
+        </div>
+
+        <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+          <div className="flex items-center gap-3 px-2 py-2 mb-3">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-gray-800 to-black flex items-center justify-center flex-shrink-0 shadow-sm text-white">
+              <span className="text-sm font-bold">
+                {user?.email?.[0].toUpperCase() || 'U'}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {user?.user_metadata?.name || 'Usuário'}
+              </p>
+              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
             </div>
           </div>
-        </ContactsProvider>
-      </CompaniesProvider>
-    </LeadsProvider>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl"
+            onClick={handleSignOut}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            Sair
+          </Button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
+        <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-8 z-10 flex-shrink-0 shadow-sm">
+          <div className="flex items-center gap-4 flex-1">
+            <button
+              className="md:hidden text-gray-500 hover:text-gray-900 transition-colors"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <div className="hidden sm:flex relative max-w-md w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="search"
+                placeholder="Busca global..."
+                className="w-full bg-gray-50/50 border-gray-200 pl-10 rounded-full h-10 focus-visible:ring-black transition-all text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-4 ml-4">
+            <button className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors relative">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+            </button>
+            <button className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors hidden sm:block">
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-gray-50/50">
+          <div className="mx-auto max-w-7xl">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+    </div>
   )
 }
