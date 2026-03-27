@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { toast } from 'sonner'
 import { useCompanies, Company } from '@/contexts/CompaniesContext'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,16 +28,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Loader2 } from 'lucide-react'
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
-  cnpj: z.string().min(14, 'CNPJ inválido'),
-  industry: z.string().min(1, 'Setor é obrigatório'),
-  address: z.string().min(5, 'Endereço é obrigatório'),
-  website: z.string().min(1, 'Website é obrigatório'),
-  employees: z.coerce.number().min(1, 'Deve ser maior que 0'),
-  email: z.string().email('E-mail inválido'),
-  phone: z.string().min(8, 'Telefone inválido'),
+  cnpj: z.string().optional(),
+  industry: z.string().optional(),
+  address: z.string().optional(),
+  website: z.string().optional(),
+  employees: z.coerce.number().min(0, 'Deve ser maior ou igual a 0').optional(),
+  email: z.string().email('E-mail inválido').or(z.literal('')).optional(),
+  phone: z.string().optional(),
 })
 
 interface CompanyDialogProps {
@@ -51,6 +53,7 @@ export function CompanyDialog({
   companyToEdit,
 }: CompanyDialogProps) {
   const { addCompany, updateCompany } = useCompanies()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -60,7 +63,7 @@ export function CompanyDialog({
       industry: '',
       address: '',
       website: '',
-      employees: 1,
+      employees: 0,
       email: '',
       phone: '',
     },
@@ -68,25 +71,59 @@ export function CompanyDialog({
 
   useEffect(() => {
     if (open) {
-      if (companyToEdit) form.reset(companyToEdit)
-      else
+      if (companyToEdit) {
+        form.reset({
+          name: companyToEdit.name,
+          cnpj: companyToEdit.cnpj || '',
+          industry: companyToEdit.industry || '',
+          address: companyToEdit.address || '',
+          website: companyToEdit.website || '',
+          employees: companyToEdit.employees || 0,
+          email: companyToEdit.email || '',
+          phone: companyToEdit.phone || '',
+        })
+      } else {
         form.reset({
           name: '',
           cnpj: '',
           industry: '',
           address: '',
           website: '',
-          employees: 1,
+          employees: 0,
           email: '',
           phone: '',
         })
+      }
     }
   }, [open, companyToEdit, form])
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    if (companyToEdit) updateCompany(companyToEdit.id, values)
-    else addCompany(values)
-    onOpenChange(false)
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true)
+    try {
+      const payload = {
+        name: values.name,
+        cnpj: values.cnpj || '',
+        industry: values.industry || '',
+        address: values.address || '',
+        website: values.website || '',
+        employees: values.employees || 0,
+        email: values.email || '',
+        phone: values.phone || '',
+      }
+
+      if (companyToEdit) {
+        await updateCompany(companyToEdit.id, payload)
+        toast.success('Empresa atualizada com sucesso!')
+      } else {
+        await addCompany(payload)
+        toast.success('Empresa criada com sucesso!')
+      }
+      onOpenChange(false)
+    } catch (error: any) {
+      toast.error(error.message || 'Ocorreu um erro ao salvar a empresa.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -110,7 +147,7 @@ export function CompanyDialog({
                   <FormItem>
                     <FormLabel>Nome</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="Nome da empresa" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -123,7 +160,7 @@ export function CompanyDialog({
                   <FormItem>
                     <FormLabel>CNPJ</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="00.000.000/0000-00" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -137,12 +174,11 @@ export function CompanyDialog({
                     <FormLabel>Setor</FormLabel>
                     <Select
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
-                      value={field.value}
+                      value={field.value || ''}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione" />
+                          <SelectValue placeholder="Selecione um setor" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -165,7 +201,7 @@ export function CompanyDialog({
                   <FormItem>
                     <FormLabel>Nº Funcionários</FormLabel>
                     <FormControl>
-                      <Input type="number" {...field} />
+                      <Input type="number" min="0" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -179,7 +215,7 @@ export function CompanyDialog({
                     <FormItem>
                       <FormLabel>Endereço</FormLabel>
                       <FormControl>
-                        <Input {...field} />
+                        <Input placeholder="Endereço completo" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -193,7 +229,7 @@ export function CompanyDialog({
                   <FormItem>
                     <FormLabel>Website</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://" {...field} />
+                      <Input placeholder="https://www.exemplo.com" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -206,7 +242,11 @@ export function CompanyDialog({
                   <FormItem>
                     <FormLabel>Email Principal</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input
+                        type="email"
+                        placeholder="contato@empresa.com"
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -219,7 +259,7 @@ export function CompanyDialog({
                   <FormItem>
                     <FormLabel>Telefone</FormLabel>
                     <FormControl>
-                      <Input {...field} />
+                      <Input placeholder="(11) 99999-9999" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -231,13 +271,18 @@ export function CompanyDialog({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 className="bg-black text-white hover:bg-gray-800"
+                disabled={isSubmitting}
               >
+                {isSubmitting && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
                 Salvar
               </Button>
             </DialogFooter>
