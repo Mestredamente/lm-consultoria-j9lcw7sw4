@@ -88,8 +88,10 @@ export function NewProposalModal({
       setContId(prop.contato_id || '')
       setOptId(prop.oportunidade_id || '')
       if (prop.data_validade) setDataValidade(prop.data_validade)
-      if ((prop as any).notas_internas) setNotasInternas((prop as any).notas_internas)
-      if ((prop as any).condicoes_pagamento) setCondicoesPagamento((prop as any).condicoes_pagamento)
+      if ((prop as any).notas_internas)
+        setNotasInternas((prop as any).notas_internas)
+      if ((prop as any).condicoes_pagamento)
+        setCondicoesPagamento((prop as any).condicoes_pagamento)
 
       const loadedServices = TIPOS_SERVICO.map((t) => {
         const found = items?.find((i) => i.tipo_servico === t)
@@ -208,7 +210,9 @@ export function NewProposalModal({
             notas_internas: notasInternas || null,
             condicoes_pagamento: condicoesPagamento || null,
           } as any)
-          .eq('id', proposalId)        if (updErr) throw updErr
+          .eq('id', proposalId)
+
+        if (updErr) throw updErr
 
         await supabase
           .from('itens_proposta')
@@ -239,7 +243,9 @@ export function NewProposalModal({
             status: 'Rascunho',
           } as any)
           .select()
-          .single()        if (insErr) throw insErr
+          .single()
+
+        if (insErr) throw insErr
         currentProposalId = newProp.id
       }
 

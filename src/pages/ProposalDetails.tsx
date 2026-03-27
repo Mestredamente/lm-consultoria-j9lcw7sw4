@@ -109,7 +109,9 @@ export default function ProposalDetails() {
       try {
         if (c.descricao?.startsWith('{'))
           return { ...JSON.parse(c.descricao), id: c.id }
-      } catch (e) {}
+      } catch (e) {
+        // ignore error
+      }
       return { id: c.id, type: c.tipo, descricao: c.descricao }
     }) as CostItem[]
     return calcularCustosProposal(s, c)
