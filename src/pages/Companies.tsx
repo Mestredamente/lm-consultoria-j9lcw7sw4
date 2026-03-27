@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Building2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Plus, Pencil, Trash2, Building2, Eye } from 'lucide-react'
 import { useCompanies, Company } from '@/contexts/CompaniesContext'
 import { Button } from '@/components/ui/button'
 import {
@@ -93,7 +94,12 @@ export default function Companies() {
                     className="hover:bg-white/40 transition-colors border-b border-gray-100/50"
                   >
                     <TableCell className="font-medium text-gray-900">
-                      {company.name}
+                      <Link
+                        to={`/companies/${company.id}`}
+                        className="hover:underline text-black font-semibold"
+                      >
+                        {company.name}
+                      </Link>
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -118,6 +124,16 @@ export default function Companies() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          asChild
+                          className="h-8 w-8 text-gray-500 hover:text-black hover:bg-gray-100"
+                        >
+                          <Link to={`/companies/${company.id}`}>
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
