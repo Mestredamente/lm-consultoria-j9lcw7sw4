@@ -38,10 +38,12 @@ import {
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
+import { NewProposalModal } from '@/components/proposals/NewProposalModal'
 
 export default function Proposals() {
   const { user } = useAuth()
   const [proposals, setProposals] = useState<any[]>([])
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('Todos')
@@ -147,10 +149,16 @@ export default function Proposals() {
             Gerencie seus orçamentos, acompanhe envios e aprovações.
           </p>
         </div>
-        <Button onClick={handleCreateMock}>
+        <Button onClick={() => setIsModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" /> Nova Proposta
         </Button>
       </div>
+
+      <NewProposalModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onSuccess={handleCreateMock}
+      />
 
       <Card>
         <CardHeader className="pb-4">
