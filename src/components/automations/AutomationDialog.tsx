@@ -36,16 +36,30 @@ export function AutomationDialog({
   const [acao, setAcao] = useState('')
   const [assunto, setAssunto] = useState('')
   const [corpo, setCorpo] = useState('')
+  const [tituloTarefa, setTituloTarefa] = useState('')
+  const [descTarefa, setDescTarefa] = useState('')
+  const [campoAtualizacao, setCampoAtualizacao] = useState('')
+  const [valorAtualizacao, setValorAtualizacao] = useState('')
 
   const handleSave = () => {
     if (!nome || !gatilho || !acao) return
+
+    let detalhes_acao = {}
+
+    if (acao === 'Enviar Email') {
+      detalhes_acao = { assunto, corpo }
+    } else if (acao === 'Criar Tarefa') {
+      detalhes_acao = { titulo: tituloTarefa, descricao: descTarefa }
+    } else if (acao === 'Atualizar Campo') {
+      detalhes_acao = { campo: campoAtualizacao, valor: valorAtualizacao }
+    }
 
     const data = {
       nome,
       gatilho,
       acao,
       ativo: true,
-      detalhes_acao: acao === 'Enviar Email' ? { assunto, corpo } : {},
+      detalhes_acao,
     }
 
     onSave(data)
@@ -56,6 +70,10 @@ export function AutomationDialog({
     setAcao('')
     setAssunto('')
     setCorpo('')
+    setTituloTarefa('')
+    setDescTarefa('')
+    setCampoAtualizacao('')
+    setValorAtualizacao('')
   }
 
   return (
@@ -152,6 +170,52 @@ export function AutomationDialog({
                   onChange={(e) => setCorpo(e.target.value)}
                   placeholder="Escreva a mensagem aqui..."
                   className="bg-white min-h-[120px]"
+                />
+              </div>
+            </div>
+          )}
+
+          {acao === 'Criar Tarefa' && (
+            <div className="space-y-4 p-4 bg-gray-50/50 border border-gray-100 rounded-xl mt-2">
+              <div className="space-y-2">
+                <Label>Título da Tarefa</Label>
+                <Input
+                  value={tituloTarefa}
+                  onChange={(e) => setTituloTarefa(e.target.value)}
+                  placeholder="Ex: Ligar para o cliente"
+                  className="bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Descrição da Tarefa</Label>
+                <Textarea
+                  value={descTarefa}
+                  onChange={(e) => setDescTarefa(e.target.value)}
+                  placeholder="Detalhes adicionais..."
+                  className="bg-white"
+                />
+              </div>
+            </div>
+          )}
+
+          {acao === 'Atualizar Campo' && (
+            <div className="space-y-4 p-4 bg-gray-50/50 border border-gray-100 rounded-xl mt-2">
+              <div className="space-y-2">
+                <Label>Campo a ser atualizado</Label>
+                <Input
+                  value={campoAtualizacao}
+                  onChange={(e) => setCampoAtualizacao(e.target.value)}
+                  placeholder="Ex: status, estagio"
+                  className="bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Novo Valor</Label>
+                <Input
+                  value={valorAtualizacao}
+                  onChange={(e) => setValorAtualizacao(e.target.value)}
+                  placeholder="Ex: Qualificação"
+                  className="bg-white"
                 />
               </div>
             </div>

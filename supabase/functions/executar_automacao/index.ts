@@ -97,15 +97,35 @@ Deno.serve(async (req: Request) => {
         })
         executados++
       } else if (fluxo.acao === 'Criar Tarefa') {
+        const titulo = detalhes.titulo || `Tarefa automática: ${fluxo.nome}`
+        const descricao =
+          detalhes.descricao || `Gerado pelo fluxo: ${fluxo.nome}`
+
         await supabase.from('atividades').insert({
           usuario_id: record.usuario_id,
           responsavel_id: record.usuario_id,
           tipo: 'Tarefa Interna',
-          titulo: `Tarefa automática: ${fluxo.nome}`,
-          descricao: `Gerado pelo fluxo: ${fluxo.nome}`,
+          titulo: titulo,
+          descricao: descricao,
           status: 'Agendada',
+          empresa_id:
+            table === 'empresas' ? record.id : record.empresa_id || null,
+          contato_id:
+            table === 'contatos' ? record.id : record.contato_id || null,
+          oportunidade_id: table === 'oportunidades' ? record.id : null,
         })
         executados++
+      } else if (fluxo.acao === 'Atualizar Campo') {
+        const campo = detalhes.campo
+        const valor = detalhes.valor
+
+        if (campo && valor !== undefined) {
+          await supabase
+            .from(table)
+            .update({ [campo]: valor })
+            .eq('id', record.id)
+          executados++
+        }
       }
     }
 

@@ -16,6 +16,6 @@
     "stripe_webhook": 2,
     "gerar_link_sala_virtual": 4,
     "enviar_mensagem_whatsapp": 7,
-    "executar_automacao": 1
+    "executar_automacao": 2
   }
 }
