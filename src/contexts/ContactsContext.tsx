@@ -42,18 +42,23 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
+  const { user, role } = useAuth()
 
   const fetchContacts = useCallback(async () => {
     if (!user) return
     setLoading(true)
     setError(null)
     try {
-      const { data, error: err } = await supabase
+      let query = supabase
         .from('contatos')
         .select('*')
-        .eq('usuario_id', user.id)
         .order('created_at', { ascending: false })
+
+      if (role === 'vendedor') {
+        query = query.eq('usuario_id', user.id)
+      }
+
+      const { data, error: err } = await query
 
       if (err) throw err
 
@@ -78,7 +83,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, role])
 
   useEffect(() => {
     if (user) {
@@ -133,7 +138,7 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!user) throw new Error('Usuário não autenticado')
 
-    const { error: err } = await supabase
+    let query = supabase
       .from('contatos')
       .update({
         nome: contactData.name,
@@ -145,7 +150,12 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
         notas: contactData.notes || null,
       })
       .eq('id', id)
-      .eq('usuario_id', user.id)
+
+    if (role === 'vendedor') {
+      query = query.eq('usuario_id', user.id)
+    }
+
+    const { error: err } = await query
 
     if (err) throw err
 
@@ -159,11 +169,13 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
   const deleteContact = async (id: string) => {
     if (!user) throw new Error('Usuário não autenticado')
 
-    const { error: err } = await supabase
-      .from('contatos')
-      .delete()
-      .eq('id', id)
-      .eq('usuario_id', user.id)
+    let query = supabase.from('contatos').delete().eq('id', id)
+
+    if (role === 'vendedor') {
+      query = query.eq('usuario_id', user.id)
+    }
+
+    const { error: err } = await query
 
     if (err) throw err
 

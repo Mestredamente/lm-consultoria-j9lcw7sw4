@@ -10,8 +10,11 @@ import { ProfileSettings } from '@/components/settings/ProfileSettings'
 import { TeamSettings } from '@/components/settings/TeamSettings'
 import { CustomFieldsSettings } from '@/components/settings/CustomFieldsSettings'
 import { IntegrationsSettings } from '@/components/settings/IntegrationsSettings'
+import { useAuth } from '@/hooks/use-auth'
 
 export default function Settings() {
+  const { role } = useAuth()
+
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       <div className="flex items-center gap-4">
@@ -38,24 +41,30 @@ export default function Settings() {
               >
                 <User className="w-4 h-4 mr-2" /> Perfil
               </TabsTrigger>
-              <TabsTrigger
-                value="equipe"
-                className="rounded-lg px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm font-medium"
-              >
-                <Users className="w-4 h-4 mr-2" /> Equipe
-              </TabsTrigger>
-              <TabsTrigger
-                value="campos"
-                className="rounded-lg px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm font-medium"
-              >
-                <Blocks className="w-4 h-4 mr-2" /> Campos Personalizados
-              </TabsTrigger>
-              <TabsTrigger
-                value="integracoes"
-                className="rounded-lg px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm font-medium"
-              >
-                <LinkIcon className="w-4 h-4 mr-2" /> Integrações
-              </TabsTrigger>
+              {role !== 'vendedor' && (
+                <TabsTrigger
+                  value="equipe"
+                  className="rounded-lg px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm font-medium"
+                >
+                  <Users className="w-4 h-4 mr-2" /> Equipe
+                </TabsTrigger>
+              )}
+              {role === 'admin' && (
+                <>
+                  <TabsTrigger
+                    value="campos"
+                    className="rounded-lg px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm font-medium"
+                  >
+                    <Blocks className="w-4 h-4 mr-2" /> Campos Personalizados
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="integracoes"
+                    className="rounded-lg px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm font-medium"
+                  >
+                    <LinkIcon className="w-4 h-4 mr-2" /> Integrações
+                  </TabsTrigger>
+                </>
+              )}
             </TabsList>
           </div>
 
@@ -68,32 +77,38 @@ export default function Settings() {
             </div>
           </TabsContent>
 
-          <TabsContent
-            value="equipe"
-            className="m-0 focus-visible:outline-none"
-          >
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-              <TeamSettings />
-            </div>
-          </TabsContent>
+          {role !== 'vendedor' && (
+            <TabsContent
+              value="equipe"
+              className="m-0 focus-visible:outline-none"
+            >
+              <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                <TeamSettings />
+              </div>
+            </TabsContent>
+          )}
 
-          <TabsContent
-            value="campos"
-            className="m-0 focus-visible:outline-none"
-          >
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-              <CustomFieldsSettings />
-            </div>
-          </TabsContent>
+          {role === 'admin' && (
+            <>
+              <TabsContent
+                value="campos"
+                className="m-0 focus-visible:outline-none"
+              >
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <CustomFieldsSettings />
+                </div>
+              </TabsContent>
 
-          <TabsContent
-            value="integracoes"
-            className="m-0 focus-visible:outline-none"
-          >
-            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-              <IntegrationsSettings />
-            </div>
-          </TabsContent>
+              <TabsContent
+                value="integracoes"
+                className="m-0 focus-visible:outline-none"
+              >
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <IntegrationsSettings />
+                </div>
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </div>
     </div>

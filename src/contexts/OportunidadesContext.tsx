@@ -54,17 +54,22 @@ export function OportunidadesProvider({ children }: { children: ReactNode }) {
   const [oportunidades, setOportunidades] = useState<Oportunidade[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
+  const { user, role } = useAuth()
 
   const fetchOportunidades = useCallback(async () => {
     if (!user) return
     setLoading(true)
     try {
-      const { data, error: err } = await supabase
+      let query = supabase
         .from('oportunidades')
         .select(`*, empresas (nome), contatos (nome)`)
-        .eq('responsavel_id', user.id)
         .order('created_at', { ascending: false })
+
+      if (role === 'vendedor') {
+        query = query.eq('responsavel_id', user.id)
+      }
+
+      const { data, error: err } = await query
 
       if (err) throw err
       if (data) setOportunidades(data as any)
@@ -73,7 +78,7 @@ export function OportunidadesProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, role])
 
   useEffect(() => {
     if (user) {
@@ -106,11 +111,13 @@ export function OportunidadesProvider({ children }: { children: ReactNode }) {
 
     const { empresas, contatos, ...updateData } = data as any
 
-    const { data: updatedOportunidade, error: err } = await supabase
-      .from('oportunidades')
-      .update(updateData)
-      .eq('id', id)
-      .eq('responsavel_id', user.id)
+    let query = supabase.from('oportunidades').update(updateData).eq('id', id)
+
+    if (role === 'vendedor') {
+      query = query.eq('responsavel_id', user.id)
+    }
+
+    const { data: updatedOportunidade, error: err } = await query
       .select(`*, empresas (nome), contatos (nome)`)
       .single()
 
@@ -125,11 +132,14 @@ export function OportunidadesProvider({ children }: { children: ReactNode }) {
 
   const deleteOportunidade = async (id: string) => {
     if (!user) throw new Error('Usuário não autenticado')
-    const { error: err } = await supabase
-      .from('oportunidades')
-      .delete()
-      .eq('id', id)
-      .eq('responsavel_id', user.id)
+
+    let query = supabase.from('oportunidades').delete().eq('id', id)
+
+    if (role === 'vendedor') {
+      query = query.eq('responsavel_id', user.id)
+    }
+
+    const { error: err } = await query
 
     if (err) throw err
     setOportunidades((prev) => prev.filter((op) => op.id !== id))

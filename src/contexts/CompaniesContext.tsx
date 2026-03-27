@@ -43,18 +43,23 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
   const [companies, setCompanies] = useState<Company[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
+  const { user, role } = useAuth()
 
   const fetchCompanies = useCallback(async () => {
     if (!user) return
     setLoading(true)
     setError(null)
     try {
-      const { data, error: err } = await supabase
+      let query = supabase
         .from('empresas')
         .select('*')
-        .eq('usuario_id', user.id)
         .order('created_at', { ascending: false })
+
+      if (role === 'vendedor') {
+        query = query.eq('usuario_id', user.id)
+      }
+
+      const { data, error: err } = await query
 
       if (err) throw err
 
@@ -80,7 +85,7 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, role])
 
   useEffect(() => {
     if (user) {
@@ -137,7 +142,7 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!user) throw new Error('Usuário não autenticado')
 
-    const { error: err } = await supabase
+    let query = supabase
       .from('empresas')
       .update({
         nome: data.name,
@@ -150,7 +155,12 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
         telefone: data.phone || null,
       })
       .eq('id', id)
-      .eq('usuario_id', user.id)
+
+    if (role === 'vendedor') {
+      query = query.eq('usuario_id', user.id)
+    }
+
+    const { error: err } = await query
 
     if (err) throw err
 
@@ -164,11 +174,13 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
   const deleteCompany = async (id: string) => {
     if (!user) throw new Error('Usuário não autenticado')
 
-    const { error: err } = await supabase
-      .from('empresas')
-      .delete()
-      .eq('id', id)
-      .eq('usuario_id', user.id)
+    let query = supabase.from('empresas').delete().eq('id', id)
+
+    if (role === 'vendedor') {
+      query = query.eq('usuario_id', user.id)
+    }
+
+    const { error: err } = await query
 
     if (err) throw err
 

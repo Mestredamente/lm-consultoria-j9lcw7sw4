@@ -51,9 +51,21 @@ export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
-  const { signOut, user } = useAuth()
+  const { signOut, user, role } = useAuth()
   const { activities } = useActivities()
   const { toast } = useToast()
+
+  const filteredNav = useMemo(() => {
+    return NAVIGATION.filter((item) => {
+      if (role === 'vendedor') {
+        return !['/reports', '/automations'].includes(item.href)
+      }
+      if (role === 'gerente') {
+        return !['/automations'].includes(item.href)
+      }
+      return true
+    })
+  }, [role])
 
   const myActivities = useMemo(
     () => activities.filter((a) => a.responsavel_id === user?.id),
@@ -108,7 +120,6 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-gray-50/50 flex flex-col md:flex-row font-sans">
-      {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
@@ -116,7 +127,6 @@ export default function Layout() {
         />
       )}
 
-      {/* Sidebar */}
       <aside
         className={cn(
           'fixed md:sticky top-0 z-50 h-screen w-64 bg-white border-r border-gray-100 flex flex-col transition-transform duration-300 ease-in-out shadow-sm md:shadow-none',
@@ -145,7 +155,7 @@ export default function Layout() {
           <div className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Menu Principal
           </div>
-          {NAVIGATION.map((item) => {
+          {filteredNav.map((item) => {
             const isActive = location.pathname === item.href
             return (
               <Link
@@ -182,7 +192,9 @@ export default function Layout() {
               <p className="text-sm font-semibold text-gray-900 truncate">
                 {user?.user_metadata?.name || 'Usuário'}
               </p>
-              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+              <p className="text-xs text-gray-500 truncate capitalize">
+                {role || 'Vendedor'}
+              </p>
             </div>
           </div>
           <Button
@@ -196,7 +208,6 @@ export default function Layout() {
         </div>
       </aside>
 
-      {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-8 z-10 flex-shrink-0 shadow-sm">
           <div className="flex items-center gap-4 flex-1">

@@ -297,9 +297,11 @@ export type Database = {
         Row: {
           ativo: boolean | null
           created_at: string
+          empresa_id: string | null
           entidade: string
           id: string
           nome: string
+          obrigatorio: boolean | null
           opcoes: Json | null
           tipo: string
           usuario_id: string
@@ -307,9 +309,11 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           created_at?: string
+          empresa_id?: string | null
           entidade: string
           id?: string
           nome: string
+          obrigatorio?: boolean | null
           opcoes?: Json | null
           tipo: string
           usuario_id: string
@@ -317,14 +321,23 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           created_at?: string
+          empresa_id?: string | null
           entidade?: string
           id?: string
           nome?: string
+          obrigatorio?: boolean | null
           opcoes?: Json | null
           tipo?: string
           usuario_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: 'campos_personalizados_empresa_id_fkey'
+            columns: ['empresa_id']
+            isOneToOne: false
+            referencedRelation: 'empresas'
+            referencedColumns: ['id']
+          },
           {
             foreignKeyName: 'campos_personalizados_usuario_id_fkey'
             columns: ['usuario_id']
@@ -1743,6 +1756,41 @@ export type Database = {
           },
         ]
       }
+      valores_campos_personalizados: {
+        Row: {
+          campo_id: string
+          created_at: string
+          id: string
+          registro_id: string
+          updated_at: string
+          valor: string | null
+        }
+        Insert: {
+          campo_id: string
+          created_at?: string
+          id?: string
+          registro_id: string
+          updated_at?: string
+          valor?: string | null
+        }
+        Update: {
+          campo_id?: string
+          created_at?: string
+          id?: string
+          registro_id?: string
+          updated_at?: string
+          valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'valores_campos_personalizados_campo_id_fkey'
+            columns: ['campo_id']
+            isOneToOne: false
+            referencedRelation: 'campos_personalizados'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2001,6 +2049,8 @@ export const Constants = {
 //   opcoes: jsonb (nullable)
 //   ativo: boolean (nullable, default: true)
 //   created_at: timestamp with time zone (not null, default: now())
+//   empresa_id: uuid (nullable)
+//   obrigatorio: boolean (nullable, default: false)
 // Table: casos_supervisao
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -2311,6 +2361,13 @@ export const Constants = {
 //   whatsapp_business_account_id: text (nullable)
 //   nome: text (nullable)
 //   created_at: timestamp with time zone (nullable, default: now())
+// Table: valores_campos_personalizados
+//   id: uuid (not null, default: gen_random_uuid())
+//   campo_id: uuid (not null)
+//   registro_id: uuid (not null)
+//   valor: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 
 // --- CONSTRAINTS ---
 // Table: agendamentos
@@ -2339,6 +2396,7 @@ export const Constants = {
 //   PRIMARY KEY bloqueios_agenda_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY bloqueios_agenda_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: campos_personalizados
+//   FOREIGN KEY campos_personalizados_empresa_id_fkey: FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE
 //   PRIMARY KEY campos_personalizados_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY campos_personalizados_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: casos_supervisao
@@ -2458,6 +2516,9 @@ export const Constants = {
 //   FOREIGN KEY usuarios_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   FOREIGN KEY usuarios_parent_id_fkey: FOREIGN KEY (parent_id) REFERENCES usuarios(id)
 //   PRIMARY KEY usuarios_pkey: PRIMARY KEY (id)
+// Table: valores_campos_personalizados
+//   FOREIGN KEY valores_campos_personalizados_campo_id_fkey: FOREIGN KEY (campo_id) REFERENCES campos_personalizados(id) ON DELETE CASCADE
+//   PRIMARY KEY valores_campos_personalizados_pkey: PRIMARY KEY (id)
 
 // --- ROW LEVEL SECURITY POLICIES ---
 // Table: agendamentos
@@ -2634,6 +2695,10 @@ export const Constants = {
 //   Policy "usuarios_update" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: (id = auth.uid())
 //     WITH CHECK: (id = auth.uid())
+// Table: valores_campos_personalizados
+//   Policy "valores_campos_personalizados_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (campo_id IN ( SELECT campos_personalizados.id    FROM campos_personalizados   WHERE (campos_personalizados.usuario_id = auth.uid())))
+//     WITH CHECK: (campo_id IN ( SELECT campos_personalizados.id    FROM campos_personalizados   WHERE (campos_personalizados.usuario_id = auth.uid())))
 
 // --- DATABASE FUNCTIONS ---
 // FUNCTION accept_patient_contract(uuid)
@@ -3359,6 +3424,8 @@ export const Constants = {
 //   set_oportunidades_updated_at: CREATE TRIGGER set_oportunidades_updated_at BEFORE UPDATE ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 //   trg_automacao_oportunidades_ins: CREATE TRIGGER trg_automacao_oportunidades_ins AFTER INSERT ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
 //   trg_automacao_oportunidades_upd: CREATE TRIGGER trg_automacao_oportunidades_upd AFTER UPDATE OF estagio ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
+// Table: valores_campos_personalizados
+//   set_valores_campos_personalizados_updated_at: CREATE TRIGGER set_valores_campos_personalizados_updated_at BEFORE UPDATE ON public.valores_campos_personalizados FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 
 // --- INDEXES ---
 // Table: atividades

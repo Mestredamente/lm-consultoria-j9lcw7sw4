@@ -57,21 +57,27 @@ export function ActivitiesProvider({ children }: { children: ReactNode }) {
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useAuth()
+  const { user, role } = useAuth()
 
   const fetchActivities = useCallback(async () => {
     if (!user) return
     setLoading(true)
     setError(null)
     try {
+      let query = supabase
+        .from('atividades')
+        .select('*')
+        .order('data_agendada', { ascending: true })
+
+      if (role === 'vendedor') {
+        query = query.eq('responsavel_id', user.id)
+      }
+
       const [
         { data: actData, error: actErr },
         { data: usrData, error: usrErr },
       ] = await Promise.all([
-        supabase
-          .from('atividades')
-          .select('*')
-          .order('data_agendada', { ascending: true }),
+        query,
         supabase.from('usuarios').select('id, nome, email'),
       ])
 
@@ -86,7 +92,7 @@ export function ActivitiesProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false)
     }
-  }, [user])
+  }, [user, role])
 
   useEffect(() => {
     if (user) {
@@ -109,12 +115,13 @@ export function ActivitiesProvider({ children }: { children: ReactNode }) {
   }
 
   const updateActivity = async (id: string, activity: Partial<Atividade>) => {
-    const { data, error: err } = await supabase
-      .from('atividades')
-      .update(activity)
-      .eq('id', id)
-      .select()
-      .single()
+    let query = supabase.from('atividades').update(activity).eq('id', id)
+
+    if (role === 'vendedor') {
+      query = query.eq('responsavel_id', user!.id)
+    }
+
+    const { data, error: err } = await query.select().single()
     if (err) throw err
     if (data)
       setActivities((prev) =>
@@ -123,10 +130,13 @@ export function ActivitiesProvider({ children }: { children: ReactNode }) {
   }
 
   const deleteActivity = async (id: string) => {
-    const { error: err } = await supabase
-      .from('atividades')
-      .delete()
-      .eq('id', id)
+    let query = supabase.from('atividades').delete().eq('id', id)
+
+    if (role === 'vendedor') {
+      query = query.eq('responsavel_id', user!.id)
+    }
+
+    const { error: err } = await query
     if (err) throw err
     setActivities((prev) => prev.filter((a) => a.id !== id))
   }

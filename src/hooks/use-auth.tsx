@@ -8,9 +8,12 @@ import {
 import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 
+export type UserRole = 'admin' | 'gerente' | 'vendedor'
+
 interface AuthContextType {
   user: User | null
   session: Session | null
+  role: UserRole | null
   signUp: (email: string, password: string) => Promise<{ error: any }>
   signIn: (email: string, password: string) => Promise<{ error: any }>
   signOut: () => Promise<{ error: any }>
@@ -28,22 +31,55 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
+  const [role, setRole] = useState<UserRole | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    let mounted = true
+
+    const loadProfile = (userId: string) => {
+      supabase
+        .from('usuarios')
+        .select('role')
+        .eq('id', userId)
+        .single()
+        .then(({ data }) => {
+          if (mounted) {
+            setRole((data?.role as UserRole) || 'vendedor')
+            setLoading(false)
+          }
+        })
+    }
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session)
       setUser(session?.user ?? null)
-      setLoading(false)
+      if (session?.user) {
+        loadProfile(session.user.id)
+      } else {
+        setRole(null)
+        setLoading(false)
+      }
     })
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
+      if (mounted) {
+        setSession(session)
+        setUser(session?.user ?? null)
+        if (session?.user) {
+          loadProfile(session.user.id)
+        } else {
+          setLoading(false)
+        }
+      }
     })
-    return () => subscription.unsubscribe()
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const signUp = async (email: string, password: string) => {
@@ -68,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, session, signUp, signIn, signOut, loading }}
+      value={{ user, session, role, signUp, signIn, signOut, loading }}
     >
       {children}
     </AuthContext.Provider>

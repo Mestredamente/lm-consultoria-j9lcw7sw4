@@ -29,8 +29,8 @@ import { ContactsProvider } from './contexts/ContactsContext'
 import { OportunidadesProvider } from './contexts/OportunidadesContext'
 import { ActivitiesProvider } from './contexts/ActivitiesContext'
 
-function ProtectedRoute() {
-  const { user, loading } = useAuth()
+function ProtectedRoute({ allowedRoles }: { allowedRoles?: string[] }) {
+  const { user, loading, role } = useAuth()
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -38,6 +38,11 @@ function ProtectedRoute() {
       </div>
     )
   if (!user) return <Navigate to="/auth" />
+
+  if (allowedRoles && role && !allowedRoles.includes(role)) {
+    return <Navigate to="/" />
+  }
+
   return <Outlet />
 }
 
@@ -70,10 +75,23 @@ const App = () => (
                         element={<CompanyDetails />}
                       />
                       <Route path="/activities" element={<Activities />} />
-                      <Route path="/automations" element={<Automations />} />
                       <Route path="/my-agenda" element={<MyAgenda />} />
-                      <Route path="/reports" element={<Reports />} />
                       <Route path="/settings" element={<SettingsPage />} />
+
+                      <Route
+                        element={
+                          <ProtectedRoute allowedRoles={['admin', 'gerente']} />
+                        }
+                      >
+                        <Route path="/reports" element={<Reports />} />
+                      </Route>
+
+                      <Route
+                        element={<ProtectedRoute allowedRoles={['admin']} />}
+                      >
+                        <Route path="/automations" element={<Automations />} />
+                      </Route>
+
                       <Route
                         path="/pipeline"
                         element={

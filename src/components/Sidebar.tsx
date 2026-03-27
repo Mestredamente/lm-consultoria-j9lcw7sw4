@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
@@ -16,6 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { useAuth } from '@/hooks/use-auth'
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Painel', path: '/' },
@@ -31,10 +33,23 @@ const navItems = [
 
 export function Sidebar() {
   const location = useLocation()
+  const { role } = useAuth()
+
+  const filteredNavItems = useMemo(() => {
+    return navItems.filter((item) => {
+      if (role === 'vendedor') {
+        return !['/reports', '/automations'].includes(item.path)
+      }
+      if (role === 'gerente') {
+        return !['/automations'].includes(item.path)
+      }
+      return true
+    })
+  }, [role])
 
   return (
     <aside className="fixed left-4 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col gap-4 bg-black/90 text-white py-6 px-3 rounded-full shadow-2xl shadow-black/20">
-      {navItems.map((item) => {
+      {filteredNavItems.map((item) => {
         const isActive = location.pathname === item.path
         return (
           <Tooltip key={item.path}>
