@@ -515,6 +515,38 @@ export type Database = {
           },
         ]
       }
+      custos_operacionais: {
+        Row: {
+          descricao: string | null
+          id: string
+          proposta_id: string
+          tipo: string
+          valor: number
+        }
+        Insert: {
+          descricao?: string | null
+          id?: string
+          proposta_id: string
+          tipo: string
+          valor?: number
+        }
+        Update: {
+          descricao?: string | null
+          id?: string
+          proposta_id?: string
+          tipo?: string
+          valor?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'custos_operacionais_proposta_id_fkey'
+            columns: ['proposta_id']
+            isOneToOne: false
+            referencedRelation: 'propostas'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       despesas: {
         Row: {
           categoria: string | null
@@ -945,6 +977,83 @@ export type Database = {
             columns: ['oportunidade_id']
             isOneToOne: false
             referencedRelation: 'oportunidades'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      historico_propostas: {
+        Row: {
+          acao: string
+          data_acao: string
+          id: string
+          proposta_id: string
+          usuario_id: string
+        }
+        Insert: {
+          acao: string
+          data_acao?: string
+          id?: string
+          proposta_id: string
+          usuario_id: string
+        }
+        Update: {
+          acao?: string
+          data_acao?: string
+          id?: string
+          proposta_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'historico_propostas_proposta_id_fkey'
+            columns: ['proposta_id']
+            isOneToOne: false
+            referencedRelation: 'propostas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'historico_propostas_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      itens_proposta: {
+        Row: {
+          descricao: string | null
+          id: string
+          proposta_id: string
+          quantidade: number
+          subtotal: number | null
+          tipo_servico: string
+          valor_unitario: number
+        }
+        Insert: {
+          descricao?: string | null
+          id?: string
+          proposta_id: string
+          quantidade?: number
+          subtotal?: number | null
+          tipo_servico: string
+          valor_unitario?: number
+        }
+        Update: {
+          descricao?: string | null
+          id?: string
+          proposta_id?: string
+          quantidade?: number
+          subtotal?: number | null
+          tipo_servico?: string
+          valor_unitario?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'itens_proposta_proposta_id_fkey'
+            columns: ['proposta_id']
+            isOneToOne: false
+            referencedRelation: 'propostas'
             referencedColumns: ['id']
           },
         ]
@@ -1441,6 +1550,80 @@ export type Database = {
           {
             foreignKeyName: 'prontuarios_usuario_id_fkey'
             columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      propostas: {
+        Row: {
+          contato_id: string | null
+          created_at: string
+          data_emissao: string
+          data_validade: string | null
+          empresa_id: string | null
+          id: string
+          numero_proposta: string | null
+          oportunidade_id: string | null
+          responsavel_id: string
+          status: string
+          updated_at: string
+          valor_total: number
+        }
+        Insert: {
+          contato_id?: string | null
+          created_at?: string
+          data_emissao?: string
+          data_validade?: string | null
+          empresa_id?: string | null
+          id?: string
+          numero_proposta?: string | null
+          oportunidade_id?: string | null
+          responsavel_id: string
+          status?: string
+          updated_at?: string
+          valor_total?: number
+        }
+        Update: {
+          contato_id?: string | null
+          created_at?: string
+          data_emissao?: string
+          data_validade?: string | null
+          empresa_id?: string | null
+          id?: string
+          numero_proposta?: string | null
+          oportunidade_id?: string | null
+          responsavel_id?: string
+          status?: string
+          updated_at?: string
+          valor_total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'propostas_contato_id_fkey'
+            columns: ['contato_id']
+            isOneToOne: false
+            referencedRelation: 'contatos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'propostas_empresa_id_fkey'
+            columns: ['empresa_id']
+            isOneToOne: false
+            referencedRelation: 'empresas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'propostas_oportunidade_id_fkey'
+            columns: ['oportunidade_id']
+            isOneToOne: false
+            referencedRelation: 'oportunidades'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'propostas_responsavel_id_fkey'
+            columns: ['responsavel_id']
             isOneToOne: false
             referencedRelation: 'usuarios'
             referencedColumns: ['id']
@@ -2091,6 +2274,12 @@ export const Constants = {
 //   registro_ans: text (nullable)
 //   contato: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: custos_operacionais
+//   id: uuid (not null, default: gen_random_uuid())
+//   proposta_id: uuid (not null)
+//   tipo: text (not null)
+//   descricao: text (nullable)
+//   valor: numeric (not null, default: 0)
 // Table: despesas
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -2180,6 +2369,20 @@ export const Constants = {
 //   estagio_anterior: text (nullable)
 //   estagio_novo: text (not null)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: historico_propostas
+//   id: uuid (not null, default: gen_random_uuid())
+//   proposta_id: uuid (not null)
+//   acao: text (not null)
+//   data_acao: timestamp with time zone (not null, default: now())
+//   usuario_id: uuid (not null)
+// Table: itens_proposta
+//   id: uuid (not null, default: gen_random_uuid())
+//   proposta_id: uuid (not null)
+//   tipo_servico: text (not null)
+//   descricao: text (nullable)
+//   quantidade: numeric (not null, default: 1)
+//   valor_unitario: numeric (not null, default: 0)
+//   subtotal: numeric (nullable)
 // Table: laudos
 //   id: uuid (not null, default: gen_random_uuid())
 //   paciente_id: uuid (not null)
@@ -2288,6 +2491,19 @@ export const Constants = {
 //   queixa_principal: text (nullable)
 //   historico_sessoes: jsonb (not null, default: '[]'::jsonb)
 //   nova_nota: text (nullable, default: ''::text)
+// Table: propostas
+//   id: uuid (not null, default: gen_random_uuid())
+//   numero_proposta: text (nullable)
+//   empresa_id: uuid (nullable)
+//   contato_id: uuid (nullable)
+//   oportunidade_id: uuid (nullable)
+//   status: text (not null, default: 'Rascunho'::text)
+//   valor_total: numeric (not null, default: 0)
+//   data_emissao: date (not null, default: CURRENT_DATE)
+//   data_validade: date (nullable)
+//   responsavel_id: uuid (not null)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: sala_espera
 //   id: uuid (not null, default: gen_random_uuid())
 //   agendamento_id: uuid (not null)
@@ -2418,6 +2634,10 @@ export const Constants = {
 // Table: convenios
 //   PRIMARY KEY convenios_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY convenios_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: custos_operacionais
+//   PRIMARY KEY custos_operacionais_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY custos_operacionais_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
+//   CHECK custos_operacionais_tipo_check: CHECK ((tipo = ANY (ARRAY['Deslocamento'::text, 'Hospedagem'::text, 'Alimentação'::text, 'Testes'::text, 'Materiais'::text])))
 // Table: despesas
 //   PRIMARY KEY despesas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY despesas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
@@ -2457,6 +2677,15 @@ export const Constants = {
 //   FOREIGN KEY historico_oportunidades_oportunidade_id_fkey: FOREIGN KEY (oportunidade_id) REFERENCES oportunidades(id) ON DELETE CASCADE
 //   PRIMARY KEY historico_oportunidades_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY historico_oportunidades_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id) ON DELETE CASCADE
+// Table: historico_propostas
+//   CHECK historico_propostas_acao_check: CHECK ((acao = ANY (ARRAY['Criada'::text, 'Enviada'::text, 'Visualizada'::text, 'Aceita'::text, 'Rejeitada'::text, 'Atualizada'::text])))
+//   PRIMARY KEY historico_propostas_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY historico_propostas_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
+//   FOREIGN KEY historico_propostas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: itens_proposta
+//   PRIMARY KEY itens_proposta_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY itens_proposta_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
+//   CHECK itens_proposta_tipo_servico_check: CHECK ((tipo_servico = ANY (ARRAY['Consultoria'::text, 'Treinamento'::text, 'Coaching'::text, 'Diagnóstico'::text, 'Palestra'::text])))
 // Table: laudos
 //   FOREIGN KEY laudos_paciente_id_fkey: FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE
 //   PRIMARY KEY laudos_pkey: PRIMARY KEY (id)
@@ -2499,6 +2728,14 @@ export const Constants = {
 //   UNIQUE prontuarios_paciente_id_key: UNIQUE (paciente_id)
 //   PRIMARY KEY prontuarios_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY prontuarios_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: propostas
+//   FOREIGN KEY propostas_contato_id_fkey: FOREIGN KEY (contato_id) REFERENCES contatos(id) ON DELETE SET NULL
+//   FOREIGN KEY propostas_empresa_id_fkey: FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE
+//   UNIQUE propostas_numero_proposta_key: UNIQUE (numero_proposta)
+//   FOREIGN KEY propostas_oportunidade_id_fkey: FOREIGN KEY (oportunidade_id) REFERENCES oportunidades(id) ON DELETE SET NULL
+//   PRIMARY KEY propostas_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY propostas_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id) ON DELETE CASCADE
+//   CHECK propostas_status_check: CHECK ((status = ANY (ARRAY['Rascunho'::text, 'Enviada'::text, 'Visualizada'::text, 'Aceita'::text, 'Rejeitada'::text])))
 // Table: sala_espera
 //   FOREIGN KEY sala_espera_agendamento_id_fkey: FOREIGN KEY (agendamento_id) REFERENCES agendamentos(id) ON DELETE CASCADE
 //   UNIQUE sala_espera_agendamento_id_key: UNIQUE (agendamento_id)
@@ -2582,6 +2819,10 @@ export const Constants = {
 //   Policy "convenios_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+// Table: custos_operacionais
+//   Policy "custos_operacionais_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = custos_operacionais.proposta_id) AND ((p.responsavel_id = auth.uid()) OR ((p.responsavel_id IN ( SELECT usuarios.id            FROM usuarios           WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = custos_operacionais.proposta_id) AND (p.responsavel_id = auth.uid()))))
 // Table: despesas
 //   Policy "despesas_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
@@ -2624,6 +2865,14 @@ export const Constants = {
 //   Policy "historico_oportunidades_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+// Table: historico_propostas
+//   Policy "historico_propostas_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = historico_propostas.proposta_id) AND ((p.responsavel_id = auth.uid()) OR ((p.responsavel_id IN ( SELECT usuarios.id            FROM usuarios           WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = historico_propostas.proposta_id) AND (p.responsavel_id = auth.uid()))))
+// Table: itens_proposta
+//   Policy "itens_proposta_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = itens_proposta.proposta_id) AND ((p.responsavel_id = auth.uid()) OR ((p.responsavel_id IN ( SELECT usuarios.id            FROM usuarios           WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = itens_proposta.proposta_id) AND (p.responsavel_id = auth.uid()))))
 // Table: laudos
 //   Policy "laudos_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
@@ -2678,6 +2927,12 @@ export const Constants = {
 //   Policy "prontuarios_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+// Table: propostas
+//   Policy "propostas_own_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (responsavel_id = auth.uid())
+//     WITH CHECK: (responsavel_id = auth.uid())
+//   Policy "propostas_team_policy" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((responsavel_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
 // Table: sala_espera
 //   Policy "Anon insert sala_espera" (INSERT, PERMISSIVE) roles={public}
 //     WITH CHECK: true
@@ -2849,6 +3104,28 @@ export const Constants = {
 //     RETURNING id INTO v_agendamento_id;
 //
 //     RETURN jsonb_build_object('success', true, 'agendamento_id', v_agendamento_id, 'hash_anamnese', v_paciente.hash_anamnese);
+//   END;
+//   $function$
+//
+// FUNCTION generate_numero_proposta()
+//   CREATE OR REPLACE FUNCTION public.generate_numero_proposta()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//       current_year text := to_char(CURRENT_DATE, 'YYYY');
+//       max_seq int;
+//   BEGIN
+//       IF NEW.numero_proposta IS NULL THEN
+//           SELECT COALESCE(MAX(substring(numero_proposta from 'PROP-\d{4}-(\d+)')::int), 0)
+//           INTO max_seq
+//           FROM public.propostas
+//           WHERE numero_proposta LIKE 'PROP-' || current_year || '-%';
+//
+//           NEW.numero_proposta := 'PROP-' || current_year || '-' || lpad((max_seq + 1)::text, 3, '0');
+//       END IF;
+//       RETURN NEW;
 //   END;
 //   $function$
 //
@@ -3223,6 +3500,34 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION log_proposta_creation()
+//   CREATE OR REPLACE FUNCTION public.log_proposta_creation()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//       INSERT INTO public.historico_propostas (proposta_id, acao, usuario_id)
+//       VALUES (NEW.id, 'Criada', NEW.responsavel_id);
+//       RETURN NEW;
+//   END;
+//   $function$
+//
+// FUNCTION log_proposta_status_change()
+//   CREATE OR REPLACE FUNCTION public.log_proposta_status_change()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//       IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status IN ('Enviada', 'Visualizada', 'Aceita', 'Rejeitada') THEN
+//           INSERT INTO public.historico_propostas (proposta_id, acao, usuario_id)
+//           VALUES (NEW.id, NEW.status, COALESCE(auth.uid(), NEW.responsavel_id));
+//       END IF;
+//       RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION log_stock_movement()
 //   CREATE OR REPLACE FUNCTION public.log_stock_movement()
 //    RETURNS trigger
@@ -3477,6 +3782,11 @@ export const Constants = {
 //   set_oportunidades_updated_at: CREATE TRIGGER set_oportunidades_updated_at BEFORE UPDATE ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 //   trg_automacao_oportunidades_ins: CREATE TRIGGER trg_automacao_oportunidades_ins AFTER INSERT ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
 //   trg_automacao_oportunidades_upd: CREATE TRIGGER trg_automacao_oportunidades_upd AFTER UPDATE OF estagio ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
+// Table: propostas
+//   set_propostas_updated_at: CREATE TRIGGER set_propostas_updated_at BEFORE UPDATE ON public.propostas FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+//   trg_generate_numero_proposta: CREATE TRIGGER trg_generate_numero_proposta BEFORE INSERT ON public.propostas FOR EACH ROW EXECUTE FUNCTION generate_numero_proposta()
+//   trg_log_proposta_creation: CREATE TRIGGER trg_log_proposta_creation AFTER INSERT ON public.propostas FOR EACH ROW EXECUTE FUNCTION log_proposta_creation()
+//   trg_log_proposta_status_change: CREATE TRIGGER trg_log_proposta_status_change AFTER UPDATE OF status ON public.propostas FOR EACH ROW EXECUTE FUNCTION log_proposta_status_change()
 // Table: valores_campos_personalizados
 //   set_valores_campos_personalizados_updated_at: CREATE TRIGGER set_valores_campos_personalizados_updated_at BEFORE UPDATE ON public.valores_campos_personalizados FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 
@@ -3487,6 +3797,8 @@ export const Constants = {
 //   CREATE INDEX idx_atividades_empresa_id ON public.atividades USING btree (empresa_id)
 //   CREATE INDEX idx_atividades_oportunidade_id ON public.atividades USING btree (oportunidade_id)
 //   CREATE INDEX idx_atividades_responsavel_id ON public.atividades USING btree (responsavel_id)
+// Table: custos_operacionais
+//   CREATE INDEX idx_custos_operacionais_proposta_id ON public.custos_operacionais USING btree (proposta_id)
 // Table: emails_automacao
 //   CREATE INDEX idx_emails_automacao_fluxo_id ON public.emails_automacao USING btree (fluxo_id)
 //   CREATE INDEX idx_emails_automacao_usuario_id ON public.emails_automacao USING btree (usuario_id)
@@ -3495,10 +3807,19 @@ export const Constants = {
 // Table: fluxos_automacao
 //   CREATE INDEX idx_fluxos_automacao_empresa_id ON public.fluxos_automacao USING btree (empresa_id)
 //   CREATE INDEX idx_fluxos_automacao_usuario_id ON public.fluxos_automacao USING btree (usuario_id)
+// Table: historico_propostas
+//   CREATE INDEX idx_historico_propostas_proposta_id ON public.historico_propostas USING btree (proposta_id)
+// Table: itens_proposta
+//   CREATE INDEX idx_itens_proposta_proposta_id ON public.itens_proposta USING btree (proposta_id)
 // Table: oportunidades
 //   CREATE INDEX idx_oportunidades_empresa_id ON public.oportunidades USING btree (empresa_id)
 //   CREATE INDEX idx_oportunidades_responsavel_id ON public.oportunidades USING btree (responsavel_id)
 // Table: prontuarios
 //   CREATE UNIQUE INDEX prontuarios_paciente_id_key ON public.prontuarios USING btree (paciente_id)
+// Table: propostas
+//   CREATE INDEX idx_propostas_empresa_id ON public.propostas USING btree (empresa_id)
+//   CREATE INDEX idx_propostas_responsavel_id ON public.propostas USING btree (responsavel_id)
+//   CREATE INDEX idx_propostas_status ON public.propostas USING btree (status)
+//   CREATE UNIQUE INDEX propostas_numero_proposta_key ON public.propostas USING btree (numero_proposta)
 // Table: sala_espera
 //   CREATE UNIQUE INDEX sala_espera_agendamento_id_key ON public.sala_espera USING btree (agendamento_id)
