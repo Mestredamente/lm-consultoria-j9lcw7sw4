@@ -16,6 +16,7 @@ import {
   CheckSquare,
   FileText,
   CalendarDays,
+  Zap,
 } from 'lucide-react'
 
 import { useAuth } from '@/hooks/use-auth'
@@ -41,6 +42,7 @@ const NAVIGATION = [
   { name: 'Propostas', href: '/proposals', icon: FileText },
   { name: 'Tarefas', href: '/tasks', icon: CheckSquare },
   { name: 'Atividades', href: '/activities', icon: Briefcase },
+  { name: 'Automações', href: '/automations', icon: Zap },
   { name: 'Relatórios', href: '/reports', icon: BarChart3 },
 ]
 

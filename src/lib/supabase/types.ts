@@ -496,6 +496,51 @@ export type Database = {
           },
         ]
       }
+      emails_automacao: {
+        Row: {
+          assunto: string
+          corpo: string
+          destinatario: string
+          enviado_em: string
+          fluxo_id: string
+          id: string
+          usuario_id: string
+        }
+        Insert: {
+          assunto: string
+          corpo: string
+          destinatario: string
+          enviado_em?: string
+          fluxo_id: string
+          id?: string
+          usuario_id: string
+        }
+        Update: {
+          assunto?: string
+          corpo?: string
+          destinatario?: string
+          enviado_em?: string
+          fluxo_id?: string
+          id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'emails_automacao_fluxo_id_fkey'
+            columns: ['fluxo_id']
+            isOneToOne: false
+            referencedRelation: 'fluxos_automacao'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'emails_automacao_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       empresas: {
         Row: {
           cnpj: string | null
@@ -664,6 +709,54 @@ export type Database = {
           },
           {
             foreignKeyName: 'financeiro_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      fluxos_automacao: {
+        Row: {
+          acao: string
+          ativo: boolean
+          created_at: string
+          empresa_id: string | null
+          gatilho: string
+          id: string
+          nome: string
+          usuario_id: string
+        }
+        Insert: {
+          acao: string
+          ativo?: boolean
+          created_at?: string
+          empresa_id?: string | null
+          gatilho: string
+          id?: string
+          nome: string
+          usuario_id: string
+        }
+        Update: {
+          acao?: string
+          ativo?: boolean
+          created_at?: string
+          empresa_id?: string | null
+          gatilho?: string
+          id?: string
+          nome?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'fluxos_automacao_empresa_id_fkey'
+            columns: ['empresa_id']
+            isOneToOne: false
+            referencedRelation: 'empresas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'fluxos_automacao_usuario_id_fkey'
             columns: ['usuario_id']
             isOneToOne: false
             referencedRelation: 'usuarios'
@@ -1897,6 +1990,14 @@ export const Constants = {
 //   data: date (not null)
 //   categoria: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: emails_automacao
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   fluxo_id: uuid (not null)
+//   destinatario: text (not null)
+//   assunto: text (not null)
+//   corpo: text (not null)
+//   enviado_em: timestamp with time zone (not null, default: now())
 // Table: empresas
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -1937,6 +2038,15 @@ export const Constants = {
 //   data_atualizacao: timestamp with time zone (not null, default: now())
 //   status: text (not null, default: 'pendente'::text)
 //   metodo_pagamento: text (nullable)
+// Table: fluxos_automacao
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   nome: text (not null)
+//   gatilho: text (not null)
+//   acao: text (not null)
+//   empresa_id: uuid (nullable)
+//   ativo: boolean (not null, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: historico_cobrancas
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -2190,6 +2300,10 @@ export const Constants = {
 // Table: despesas
 //   PRIMARY KEY despesas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY despesas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: emails_automacao
+//   FOREIGN KEY emails_automacao_fluxo_id_fkey: FOREIGN KEY (fluxo_id) REFERENCES fluxos_automacao(id) ON DELETE CASCADE
+//   PRIMARY KEY emails_automacao_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY emails_automacao_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: empresas
 //   PRIMARY KEY empresas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY empresas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
@@ -2204,6 +2318,12 @@ export const Constants = {
 //   PRIMARY KEY financeiro_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY financeiro_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 //   UNIQUE financeiro_usuario_paciente_mes_ano_key: UNIQUE (usuario_id, paciente_id, mes, ano)
+// Table: fluxos_automacao
+//   CHECK fluxos_automacao_acao_check: CHECK ((acao = ANY (ARRAY['Enviar Email'::text, 'Criar Tarefa'::text, 'Atualizar Campo'::text])))
+//   FOREIGN KEY fluxos_automacao_empresa_id_fkey: FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE
+//   CHECK fluxos_automacao_gatilho_check: CHECK ((gatilho = ANY (ARRAY['Nova Empresa Criada'::text, 'Contato Criado'::text, 'Oportunidade Criada'::text, 'Oportunidade Ganha'::text])))
+//   PRIMARY KEY fluxos_automacao_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY fluxos_automacao_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: historico_cobrancas
 //   FOREIGN KEY historico_cobrancas_paciente_id_fkey: FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE
 //   PRIMARY KEY historico_cobrancas_pkey: PRIMARY KEY (id)
@@ -2334,6 +2454,10 @@ export const Constants = {
 //   Policy "despesas_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+// Table: emails_automacao
+//   Policy "emails_automacao_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
 // Table: empresas
 //   Policy "empresas_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
@@ -2348,6 +2472,10 @@ export const Constants = {
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: financeiro
 //   Policy "financeiro_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+// Table: fluxos_automacao
+//   Policy "fluxos_automacao_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: historico_cobrancas
@@ -3143,8 +3271,14 @@ export const Constants = {
 //   CREATE INDEX idx_atividades_empresa_id ON public.atividades USING btree (empresa_id)
 //   CREATE INDEX idx_atividades_oportunidade_id ON public.atividades USING btree (oportunidade_id)
 //   CREATE INDEX idx_atividades_responsavel_id ON public.atividades USING btree (responsavel_id)
+// Table: emails_automacao
+//   CREATE INDEX idx_emails_automacao_fluxo_id ON public.emails_automacao USING btree (fluxo_id)
+//   CREATE INDEX idx_emails_automacao_usuario_id ON public.emails_automacao USING btree (usuario_id)
 // Table: financeiro
 //   CREATE UNIQUE INDEX financeiro_usuario_paciente_mes_ano_key ON public.financeiro USING btree (usuario_id, paciente_id, mes, ano)
+// Table: fluxos_automacao
+//   CREATE INDEX idx_fluxos_automacao_empresa_id ON public.fluxos_automacao USING btree (empresa_id)
+//   CREATE INDEX idx_fluxos_automacao_usuario_id ON public.fluxos_automacao USING btree (usuario_id)
 // Table: oportunidades
 //   CREATE INDEX idx_oportunidades_empresa_id ON public.oportunidades USING btree (empresa_id)
 //   CREATE INDEX idx_oportunidades_responsavel_id ON public.oportunidades USING btree (responsavel_id)
