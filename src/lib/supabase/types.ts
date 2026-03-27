@@ -289,6 +289,63 @@ export type Database = {
           },
         ]
       }
+      contatos: {
+        Row: {
+          cargo: string | null
+          created_at: string
+          email: string | null
+          empresa_id: string | null
+          id: string
+          linkedin: string | null
+          nome: string
+          notas: string | null
+          telefone: string | null
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          cargo?: string | null
+          created_at?: string
+          email?: string | null
+          empresa_id?: string | null
+          id?: string
+          linkedin?: string | null
+          nome: string
+          notas?: string | null
+          telefone?: string | null
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          cargo?: string | null
+          created_at?: string
+          email?: string | null
+          empresa_id?: string | null
+          id?: string
+          linkedin?: string | null
+          nome?: string
+          notas?: string | null
+          telefone?: string | null
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'contatos_empresa_id_fkey'
+            columns: ['empresa_id']
+            isOneToOne: false
+            referencedRelation: 'empresas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'contatos_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       convenios: {
         Row: {
           contato: string | null
@@ -355,6 +412,59 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'despesas_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      empresas: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          email: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          num_funcionarios: number | null
+          setor: string | null
+          telefone: string | null
+          updated_at: string
+          usuario_id: string
+          website: string | null
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          num_funcionarios?: number | null
+          setor?: string | null
+          telefone?: string | null
+          updated_at?: string
+          usuario_id: string
+          website?: string | null
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          num_funcionarios?: number | null
+          setor?: string | null
+          telefone?: string | null
+          updated_at?: string
+          usuario_id?: string
+          website?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'empresas_usuario_id_fkey'
             columns: ['usuario_id']
             isOneToOne: false
             referencedRelation: 'usuarios'
@@ -1170,6 +1280,7 @@ export type Database = {
           chave_pix: string | null
           cidade: string | null
           complemento: string | null
+          created_at: string | null
           data_proxima_cobranca: string | null
           email: string | null
           endereco_consultorio: string | null
@@ -1180,6 +1291,7 @@ export type Database = {
           lembrete_whatsapp_ativo: boolean | null
           logo_url: string | null
           meta_mensal_consultas: number | null
+          nome: string | null
           nome_consultorio: string | null
           numero: string | null
           onboarding_concluido: boolean | null
@@ -1216,6 +1328,7 @@ export type Database = {
           chave_pix?: string | null
           cidade?: string | null
           complemento?: string | null
+          created_at?: string | null
           data_proxima_cobranca?: string | null
           email?: string | null
           endereco_consultorio?: string | null
@@ -1226,6 +1339,7 @@ export type Database = {
           lembrete_whatsapp_ativo?: boolean | null
           logo_url?: string | null
           meta_mensal_consultas?: number | null
+          nome?: string | null
           nome_consultorio?: string | null
           numero?: string | null
           onboarding_concluido?: boolean | null
@@ -1262,6 +1376,7 @@ export type Database = {
           chave_pix?: string | null
           cidade?: string | null
           complemento?: string | null
+          created_at?: string | null
           data_proxima_cobranca?: string | null
           email?: string | null
           endereco_consultorio?: string | null
@@ -1272,6 +1387,7 @@ export type Database = {
           lembrete_whatsapp_ativo?: boolean | null
           logo_url?: string | null
           meta_mensal_consultas?: number | null
+          nome?: string | null
           nome_consultorio?: string | null
           numero?: string | null
           onboarding_concluido?: boolean | null
@@ -1558,6 +1674,18 @@ export const Constants = {
 //   conteudo: text (not null)
 //   data_envio: timestamp with time zone (not null, default: now())
 //   tipo: text (not null, default: 'newsletter'::text)
+// Table: contatos
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   nome: text (not null)
+//   cargo: text (nullable)
+//   email: text (nullable)
+//   telefone: text (nullable)
+//   linkedin: text (nullable)
+//   empresa_id: uuid (nullable)
+//   notas: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: convenios
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -1573,6 +1701,19 @@ export const Constants = {
 //   data: date (not null)
 //   categoria: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: empresas
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   nome: text (not null)
+//   cnpj: text (nullable)
+//   setor: text (nullable)
+//   endereco: text (nullable)
+//   website: text (nullable)
+//   num_funcionarios: integer (nullable, default: 0)
+//   email: text (nullable)
+//   telefone: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: estoque
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -1787,6 +1928,8 @@ export const Constants = {
 //   whatsapp_api_key: text (nullable)
 //   whatsapp_business_phone_id: text (nullable)
 //   whatsapp_business_account_id: text (nullable)
+//   nome: text (nullable)
+//   created_at: timestamp with time zone (nullable, default: now())
 
 // --- CONSTRAINTS ---
 // Table: agendamentos
@@ -1812,12 +1955,19 @@ export const Constants = {
 // Table: comunicacoes_campanhas
 //   PRIMARY KEY comunicacoes_campanhas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY comunicacoes_campanhas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: contatos
+//   FOREIGN KEY contatos_empresa_id_fkey: FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE
+//   PRIMARY KEY contatos_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY contatos_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: convenios
 //   PRIMARY KEY convenios_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY convenios_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: despesas
 //   PRIMARY KEY despesas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY despesas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: empresas
+//   PRIMARY KEY empresas_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY empresas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: estoque
 //   PRIMARY KEY estoque_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY estoque_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
@@ -1932,12 +2082,20 @@ export const Constants = {
 //   Policy "campanhas_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+// Table: contatos
+//   Policy "contatos_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
 // Table: convenios
 //   Policy "convenios_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: despesas
 //   Policy "despesas_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+// Table: empresas
+//   Policy "empresas_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: estoque
@@ -2604,6 +2762,18 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION set_updated_at()
+//   CREATE OR REPLACE FUNCTION public.set_updated_at()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//     NEW.updated_at = NOW();
+//     RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION submit_patient_test(uuid, uuid, jsonb)
 //   CREATE OR REPLACE FUNCTION public.submit_patient_test(p_hash uuid, p_teste_id uuid, p_respostas jsonb)
 //    RETURNS boolean
@@ -2683,6 +2853,10 @@ export const Constants = {
 // Table: agendamentos
 //   agendamento_confirmado_trigger: CREATE TRIGGER agendamento_confirmado_trigger AFTER UPDATE ON public.agendamentos FOR EACH ROW EXECUTE FUNCTION trigger_agendamento_confirmado()
 //   audit_agendamentos_trigger: CREATE TRIGGER audit_agendamentos_trigger AFTER INSERT OR DELETE OR UPDATE ON public.agendamentos FOR EACH ROW EXECUTE FUNCTION log_audit_action()
+// Table: contatos
+//   set_contatos_updated_at: CREATE TRIGGER set_contatos_updated_at BEFORE UPDATE ON public.contatos FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+// Table: empresas
+//   set_empresas_updated_at: CREATE TRIGGER set_empresas_updated_at BEFORE UPDATE ON public.empresas FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: estoque
 //   stock_movement_trigger: CREATE TRIGGER stock_movement_trigger AFTER INSERT OR UPDATE ON public.estoque FOR EACH ROW EXECUTE FUNCTION log_stock_movement()
 //   trigger_check_low_stock: CREATE TRIGGER trigger_check_low_stock AFTER INSERT OR UPDATE OF quantidade, quantidade_minima ON public.estoque FOR EACH ROW EXECUTE FUNCTION check_low_stock()

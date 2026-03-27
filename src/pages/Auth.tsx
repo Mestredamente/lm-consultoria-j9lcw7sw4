@@ -27,25 +27,43 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoadingForm(true)
-    const { error } = isSignUp
-      ? await signUp(email, password)
-      : await signIn(email, password)
 
-    if (error) {
+    try {
+      const { error } = isSignUp
+        ? await signUp(email, password)
+        : await signIn(email, password)
+
+      if (error) {
+        let errorMessage = error.message
+        if (error.message === 'Invalid login credentials') {
+          errorMessage =
+            'Credenciais de login inválidas. Verifique seu e-mail e senha ou crie uma conta.'
+        } else if (error.message === 'User already registered') {
+          errorMessage = 'Este e-mail já está cadastrado.'
+        }
+
+        toast({
+          title: 'Erro',
+          description: errorMessage,
+          variant: 'destructive',
+        })
+      } else {
+        if (isSignUp) {
+          toast({
+            title: 'Conta criada',
+            description: 'Verifique seu email para confirmar o cadastro.',
+          })
+        }
+      }
+    } catch (err: any) {
       toast({
         title: 'Erro',
-        description: error.message,
+        description: 'Ocorreu um erro inesperado. Tente novamente.',
         variant: 'destructive',
       })
-    } else {
-      if (isSignUp) {
-        toast({
-          title: 'Conta criada',
-          description: 'Verifique seu email para confirmar o cadastro.',
-        })
-      }
+    } finally {
+      setLoadingForm(false)
     }
-    setLoadingForm(false)
   }
 
   return (
