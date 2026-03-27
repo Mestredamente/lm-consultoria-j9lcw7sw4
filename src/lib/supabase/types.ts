@@ -293,6 +293,47 @@ export type Database = {
           },
         ]
       }
+      campos_personalizados: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          entidade: string
+          id: string
+          nome: string
+          opcoes: Json | null
+          tipo: string
+          usuario_id: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          entidade: string
+          id?: string
+          nome: string
+          opcoes?: Json | null
+          tipo: string
+          usuario_id: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          entidade?: string
+          id?: string
+          nome?: string
+          opcoes?: Json | null
+          tipo?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'campos_personalizados_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       casos_supervisao: {
         Row: {
           area_atuacao: string | null
@@ -1951,6 +1992,15 @@ export const Constants = {
 //   data_inicio: timestamp with time zone (not null)
 //   data_fim: timestamp with time zone (not null)
 //   descricao: text (nullable)
+// Table: campos_personalizados
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   entidade: text (not null)
+//   nome: text (not null)
+//   tipo: text (not null)
+//   opcoes: jsonb (nullable)
+//   ativo: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: casos_supervisao
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -2288,6 +2338,9 @@ export const Constants = {
 // Table: bloqueios_agenda
 //   PRIMARY KEY bloqueios_agenda_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY bloqueios_agenda_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: campos_personalizados
+//   PRIMARY KEY campos_personalizados_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY campos_personalizados_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: casos_supervisao
 //   PRIMARY KEY casos_supervisao_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY casos_supervisao_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
@@ -2436,6 +2489,10 @@ export const Constants = {
 //     USING: true
 // Table: bloqueios_agenda
 //   Policy "bloqueios_agenda_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+// Table: campos_personalizados
+//   Policy "campos_personalizados_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: casos_supervisao

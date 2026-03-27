@@ -11,6 +11,7 @@ import {
   FormField,
   FormItem,
   FormMessage,
+  FormLabel,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -31,12 +32,31 @@ import {
 } from '@/components/ui/table'
 import { Trash2, Plus, Blocks } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 
-const fieldSchema = z.object({
-  entidade: z.string().min(1, 'Entidade é obrigatória'),
-  nome: z.string().min(2, 'Nome é obrigatório'),
-  tipo: z.string().min(1, 'Tipo é obrigatório'),
-})
+const fieldSchema = z
+  .object({
+    entidade: z.string().min(1, 'Entidade é obrigatória'),
+    nome: z.string().min(2, 'Nome é obrigatório'),
+    tipo: z.string().min(1, 'Tipo é obrigatório'),
+    obrigatorio: z.boolean().default(false),
+    opcoes: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (
+        data.tipo === 'select' &&
+        (!data.opcoes || data.opcoes.trim() === '')
+      ) {
+        return false
+      }
+      return true
+    },
+    {
+      message: 'Opções são obrigatórias para campos do tipo Select',
+      path: ['opcoes'],
+    },
+  )
 
 export function CustomFieldsSettings() {
   const { user } = useAuth()
@@ -45,8 +65,16 @@ export function CustomFieldsSettings() {
 
   const form = useForm<z.infer<typeof fieldSchema>>({
     resolver: zodResolver(fieldSchema),
-    defaultValues: { entidade: 'empresas', nome: '', tipo: 'texto' },
+    defaultValues: {
+      entidade: 'empresa',
+      nome: '',
+      tipo: 'texto',
+      obrigatorio: false,
+      opcoes: '',
+    },
   })
+
+  const watchTipo = form.watch('tipo')
 
   const fetchFields = async () => {
     if (!user) return
@@ -54,6 +82,7 @@ export function CustomFieldsSettings() {
       .from('campos_personalizados')
       .select('*')
       .eq('usuario_id', user.id)
+      .order('created_at', { ascending: false })
     if (data) setFields(data)
   }
 
@@ -65,15 +94,27 @@ export function CustomFieldsSettings() {
     if (!user) return
     setLoading(true)
     try {
+      const opcoesArray =
+        values.tipo === 'select' && values.opcoes
+          ? values.opcoes.split(',').map((s) => s.trim())
+          : null
+
       const { error } = await supabase.from('campos_personalizados').insert({
         usuario_id: user.id,
         entidade: values.entidade,
         nome: values.nome,
         tipo: values.tipo,
+        obrigatorio: values.obrigatorio,
+        opcoes: opcoesArray,
       })
       if (error) throw error
-      toast.success('Campo criado com sucesso!')
-      form.reset({ ...values, nome: '' })
+      toast.success('Campo personalizado criado com sucesso!')
+      form.reset({
+        ...values,
+        nome: '',
+        opcoes: '',
+        obrigatorio: false,
+      })
       fetchFields()
     } catch (error: any) {
       toast.error('Erro ao criar campo: ' + error.message)
@@ -101,84 +142,128 @@ export function CustomFieldsSettings() {
           Adicionar Novo Campo
         </h3>
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="flex flex-col md:flex-row items-start gap-4"
-          >
-            <FormField
-              control={form.control}
-              name="entidade"
-              render={({ field }) => (
-                <FormItem className="w-full md:w-48">
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <FormField
+                control={form.control}
+                name="entidade"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Entidade</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="empresa">Empresa</SelectItem>
+                        <SelectItem value="contato">Contato</SelectItem>
+                        <SelectItem value="oportunidade">
+                          Oportunidade
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="nome"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nome do Campo</FormLabel>
                     <FormControl>
-                      <SelectTrigger className="bg-white">
-                        <SelectValue placeholder="Entidade" />
-                      </SelectTrigger>
+                      <Input
+                        placeholder="Ex: Origem do Lead"
+                        className="bg-white"
+                        {...field}
+                      />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="empresas">Empresas</SelectItem>
-                      <SelectItem value="contatos">Contatos</SelectItem>
-                      <SelectItem value="oportunidades">
-                        Oportunidades
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="nome"
-              render={({ field }) => (
-                <FormItem className="w-full md:flex-1">
-                  <FormControl>
-                    <Input
-                      placeholder="Nome do Campo"
-                      className="bg-white"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="tipo"
-              render={({ field }) => (
-                <FormItem className="w-full md:w-48">
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tipo"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="texto">Texto</SelectItem>
+                        <SelectItem value="numero">Número</SelectItem>
+                        <SelectItem value="data">Data</SelectItem>
+                        <SelectItem value="select">Select</SelectItem>
+                        <SelectItem value="checkbox">Checkbox</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {watchTipo === 'select' && (
+              <FormField
+                control={form.control}
+                name="opcoes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Opções (separadas por vírgula)</FormLabel>
                     <FormControl>
-                      <SelectTrigger className="bg-white">
-                        <SelectValue placeholder="Tipo" />
-                      </SelectTrigger>
+                      <Input
+                        placeholder="LinkedIn, Indicação, Evento"
+                        className="bg-white"
+                        {...field}
+                      />
                     </FormControl>
-                    <SelectContent>
-                      <SelectItem value="texto">Texto</SelectItem>
-                      <SelectItem value="numero">Número</SelectItem>
-                      <SelectItem value="data">Data</SelectItem>
-                      <SelectItem value="booleano">Verdadeiro/Falso</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button
-              type="submit"
-              disabled={loading}
-              className="w-full md:w-auto bg-black text-white hover:bg-gray-800 rounded-xl"
-            >
-              <Plus className="w-4 h-4 mr-2" /> Adicionar
-            </Button>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-2 gap-4">
+              <FormField
+                control={form.control}
+                name="obrigatorio"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center gap-3 space-y-0">
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormLabel className="text-sm font-normal cursor-pointer">
+                      Campo Obrigatório
+                    </FormLabel>
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full sm:w-auto bg-black text-white hover:bg-gray-800 rounded-xl"
+              >
+                <Plus className="w-4 h-4 mr-2" /> Adicionar Campo
+              </Button>
+            </div>
           </form>
         </Form>
       </div>
@@ -187,13 +272,16 @@ export function CustomFieldsSettings() {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">
           Campos Existentes
         </h3>
-        <div className="rounded-xl border border-gray-100 overflow-hidden bg-white">
+        <div className="rounded-xl border border-gray-100 overflow-hidden bg-white shadow-sm">
           <Table>
             <TableHeader className="bg-gray-50/80">
               <TableRow>
                 <TableHead className="font-semibold">Entidade</TableHead>
                 <TableHead className="font-semibold">Nome</TableHead>
                 <TableHead className="font-semibold">Tipo</TableHead>
+                <TableHead className="font-semibold text-center">
+                  Obrigatório
+                </TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -201,7 +289,7 @@ export function CustomFieldsSettings() {
               {fields.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className="text-center text-gray-500 py-8"
                   >
                     Nenhum campo personalizado cadastrado.
@@ -220,6 +308,15 @@ export function CustomFieldsSettings() {
                     </TableCell>
                     <TableCell className="capitalize text-gray-500">
                       {f.tipo}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {f.obrigatorio ? (
+                        <Badge className="bg-blue-50 text-blue-700 hover:bg-blue-100 border-0">
+                          Sim
+                        </Badge>
+                      ) : (
+                        <span className="text-gray-400 text-sm">Não</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <Button
