@@ -29,6 +29,7 @@ export interface Oportunidade {
   estagio: EstagioOportunidade
   responsavel_id: string
   descricao: string | null
+  notas_internas: string | null
   created_at: string
   updated_at: string
   empresas?: { nome: string } | null
@@ -61,13 +62,7 @@ export function OportunidadesProvider({ children }: { children: ReactNode }) {
     try {
       const { data, error: err } = await supabase
         .from('oportunidades')
-        .select(
-          `
-          *,
-          empresas (nome),
-          contatos (nome)
-        `,
-        )
+        .select(`*, empresas (nome), contatos (nome)`)
         .eq('responsavel_id', user.id)
         .order('created_at', { ascending: false })
 
@@ -93,17 +88,8 @@ export function OportunidadesProvider({ children }: { children: ReactNode }) {
     if (!user) throw new Error('Usuário não autenticado')
     const { data: novaOportunidade, error: err } = await supabase
       .from('oportunidades')
-      .insert({
-        ...data,
-        responsavel_id: user.id,
-      })
-      .select(
-        `
-        *,
-        empresas (nome),
-        contatos (nome)
-      `,
-      )
+      .insert({ ...data, responsavel_id: user.id })
+      .select(`*, empresas (nome), contatos (nome)`)
       .single()
 
     if (err) throw err
@@ -118,7 +104,6 @@ export function OportunidadesProvider({ children }: { children: ReactNode }) {
   ) => {
     if (!user) throw new Error('Usuário não autenticado')
 
-    // Removing joined fields if passed in data
     const { empresas, contatos, ...updateData } = data as any
 
     const { data: updatedOportunidade, error: err } = await supabase
@@ -126,13 +111,7 @@ export function OportunidadesProvider({ children }: { children: ReactNode }) {
       .update(updateData)
       .eq('id', id)
       .eq('responsavel_id', user.id)
-      .select(
-        `
-        *,
-        empresas (nome),
-        contatos (nome)
-      `,
-      )
+      .select(`*, empresas (nome), contatos (nome)`)
       .single()
 
     if (err) throw err
