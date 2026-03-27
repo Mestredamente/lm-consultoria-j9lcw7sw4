@@ -1,4 +1,10 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  Outlet,
+} from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
@@ -10,86 +16,105 @@ import Contacts from './pages/Contacts'
 import PlaceholderPage from './pages/PlaceholderPage'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
+import Auth from './pages/Auth'
+import { AuthProvider, useAuth } from './hooks/use-auth'
+
+function ProtectedRoute() {
+  const { user, loading } = useAuth()
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Carregando...
+      </div>
+    )
+  if (!user) return <Navigate to="/auth" />
+  return <Outlet />
+}
 
 const App = () => (
   <BrowserRouter
     future={{ v7_startTransition: false, v7_relativeSplatPath: false }}
   >
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Index />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/contacts" element={<Contacts />} />
-          <Route path="/companies" element={<Companies />} />
-          <Route path="/companies/:id" element={<CompanyDetails />} />
-          <Route
-            path="/pipeline"
-            element={
-              <PlaceholderPage
-                title="Pipeline"
-                description="Visualize o progresso dos seus negócios."
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Routes>
+          <Route path="/auth" element={<Auth />} />
+          <Route element={<ProtectedRoute />}>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/leads" element={<Leads />} />
+              <Route path="/contacts" element={<Contacts />} />
+              <Route path="/companies" element={<Companies />} />
+              <Route path="/companies/:id" element={<CompanyDetails />} />
+              <Route
+                path="/pipeline"
+                element={
+                  <PlaceholderPage
+                    title="Pipeline"
+                    description="Visualize o progresso dos seus negócios."
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/activities"
-            element={
-              <PlaceholderPage
-                title="Atividades"
-                description="Gerencie suas tarefas e eventos."
+              <Route
+                path="/activities"
+                element={
+                  <PlaceholderPage
+                    title="Atividades"
+                    description="Gerencie suas tarefas e eventos."
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/tasks"
-            element={
-              <PlaceholderPage
-                title="Tarefas"
-                description="Lista de tarefas pendentes."
+              <Route
+                path="/tasks"
+                element={
+                  <PlaceholderPage
+                    title="Tarefas"
+                    description="Lista de tarefas pendentes."
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/proposals"
-            element={
-              <PlaceholderPage
-                title="Propostas"
-                description="Gerencie orçamentos e propostas."
+              <Route
+                path="/proposals"
+                element={
+                  <PlaceholderPage
+                    title="Propostas"
+                    description="Gerencie orçamentos e propostas."
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <PlaceholderPage
-                title="Relatórios"
-                description="Análises e métricas de desempenho."
+              <Route
+                path="/reports"
+                element={
+                  <PlaceholderPage
+                    title="Relatórios"
+                    description="Análises e métricas de desempenho."
+                  />
+                }
               />
-            }
-          />
-          <Route
-            path="/founders"
-            element={<PlaceholderPage title="Fundadores" />}
-          />
-          <Route
-            path="/finance"
-            element={<PlaceholderPage title="Finanças" />}
-          />
-          <Route
-            path="/growth"
-            element={<PlaceholderPage title="Crescimento" />}
-          />
-          <Route
-            path="/projects"
-            element={<PlaceholderPage title="Projetos" />}
-          />
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </TooltipProvider>
+              <Route
+                path="/founders"
+                element={<PlaceholderPage title="Fundadores" />}
+              />
+              <Route
+                path="/finance"
+                element={<PlaceholderPage title="Finanças" />}
+              />
+              <Route
+                path="/growth"
+                element={<PlaceholderPage title="Crescimento" />}
+              />
+              <Route
+                path="/projects"
+                element={<PlaceholderPage title="Projetos" />}
+              />
+            </Route>
+          </Route>
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </TooltipProvider>
+    </AuthProvider>
   </BrowserRouter>
 )
 
