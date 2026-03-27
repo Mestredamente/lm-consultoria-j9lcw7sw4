@@ -8,6 +8,7 @@ import {
   CheckSquare,
   FileText,
   BarChart,
+  Target,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -18,7 +19,8 @@ import {
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Painel', path: '/' },
-  { icon: Users, label: 'Leads', path: '/leads' },
+  { icon: Target, label: 'Leads', path: '/leads' },
+  { icon: Users, label: 'Contatos', path: '/contacts' },
   { icon: Building2, label: 'Empresas', path: '/companies' },
   { icon: Kanban, label: 'Pipeline', path: '/pipeline' },
   { icon: Activity, label: 'Atividades', path: '/activities' },
