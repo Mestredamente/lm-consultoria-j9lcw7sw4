@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function Auth() {
   const [isSignUp, setIsSignUp] = useState(false)
-  const [email, setEmail] = useState('mestredamente1@gmail.com')
+  const [email, setEmail] = useState('taka@hotmail.com')
   const [password, setPassword] = useState('Taka@126110')
   const [loadingForm, setLoadingForm] = useState(false)
   const { signIn, signUp, user, loading } = useAuth()
@@ -40,6 +40,9 @@ export default function Auth() {
             'Credenciais de login inválidas. Verifique seu e-mail e senha ou crie uma conta.'
         } else if (error.message === 'User already registered') {
           errorMessage = 'Este e-mail já está cadastrado.'
+        } else if (error.message === 'Email not confirmed') {
+          errorMessage =
+            'E-mail não confirmado. Verifique sua caixa de entrada.'
         }
 
         toast({
