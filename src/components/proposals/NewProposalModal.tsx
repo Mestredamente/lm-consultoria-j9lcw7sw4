@@ -131,7 +131,9 @@ export function NewProposalModal({
               const parsed = JSON.parse(c.descricao)
               return { ...parsed, id: c.id }
             }
-          } catch (e) {}
+          } catch (e) {
+            // ignore parsing error
+          }
           return { id: c.id, type: c.tipo as any, descricao: c.descricao }
         }) || []
       setCosts(loadedCosts)
