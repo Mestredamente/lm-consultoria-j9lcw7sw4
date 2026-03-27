@@ -423,6 +423,53 @@ export type Database = {
           },
         ]
       }
+      consultores: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          especialidade: string | null
+          id: string
+          nome: string
+          taxa_horaria_junior: number | null
+          taxa_horaria_pleno: number | null
+          taxa_horaria_senior: number | null
+          updated_at: string
+          usuario_id: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          especialidade?: string | null
+          id?: string
+          nome: string
+          taxa_horaria_junior?: number | null
+          taxa_horaria_pleno?: number | null
+          taxa_horaria_senior?: number | null
+          updated_at?: string
+          usuario_id: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          especialidade?: string | null
+          id?: string
+          nome?: string
+          taxa_horaria_junior?: number | null
+          taxa_horaria_pleno?: number | null
+          taxa_horaria_senior?: number | null
+          updated_at?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'consultores_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       contatos: {
         Row: {
           cargo: string | null
@@ -1020,6 +1067,50 @@ export type Database = {
           },
         ]
       }
+      hoteis_regioes: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          id: string
+          regiao: string
+          updated_at: string
+          usuario_id: string
+          valor_diaria_economica: number | null
+          valor_diaria_media: number | null
+          valor_diaria_premium: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          id?: string
+          regiao: string
+          updated_at?: string
+          usuario_id: string
+          valor_diaria_economica?: number | null
+          valor_diaria_media?: number | null
+          valor_diaria_premium?: number | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          id?: string
+          regiao?: string
+          updated_at?: string
+          usuario_id?: string
+          valor_diaria_economica?: number | null
+          valor_diaria_media?: number | null
+          valor_diaria_premium?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'hoteis_regioes_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       itens_proposta: {
         Row: {
           descricao: string | null
@@ -1166,6 +1257,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'logs_auditoria_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      materiais: {
+        Row: {
+          ativo: boolean | null
+          categoria: string | null
+          created_at: string
+          id: string
+          nome: string
+          updated_at: string
+          usuario_id: string
+          valor_unitario: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria?: string | null
+          created_at?: string
+          id?: string
+          nome: string
+          updated_at?: string
+          usuario_id: string
+          valor_unitario?: number | null
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string | null
+          created_at?: string
+          id?: string
+          nome?: string
+          updated_at?: string
+          usuario_id?: string
+          valor_unitario?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'materiais_usuario_id_fkey'
             columns: ['usuario_id']
             isOneToOne: false
             referencedRelation: 'usuarios'
@@ -1446,6 +1578,88 @@ export type Database = {
           },
         ]
       }
+      parametros_financeiros: {
+        Row: {
+          ativo: boolean | null
+          chave: string
+          created_at: string
+          descricao: string | null
+          id: string
+          tipo: string | null
+          updated_at: string
+          usuario_id: string
+          valor: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          chave: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          tipo?: string | null
+          updated_at?: string
+          usuario_id: string
+          valor?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          chave?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          tipo?: string | null
+          updated_at?: string
+          usuario_id?: string
+          valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'parametros_financeiros_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      per_diem_regioes: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          id: string
+          regiao: string
+          updated_at: string
+          usuario_id: string
+          valor_diario: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          id?: string
+          regiao: string
+          updated_at?: string
+          usuario_id: string
+          valor_diario?: number | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          id?: string
+          regiao?: string
+          updated_at?: string
+          usuario_id?: string
+          valor_diario?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'per_diem_regioes_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       pontos_eletronicos: {
         Row: {
           created_at: string | null
@@ -1630,6 +1844,50 @@ export type Database = {
           },
         ]
       }
+      rotas_aereas: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          destino: string
+          id: string
+          origem: string
+          tempo_voo: string | null
+          updated_at: string
+          usuario_id: string
+          valor_passagem: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          destino: string
+          id?: string
+          origem: string
+          tempo_voo?: string | null
+          updated_at?: string
+          usuario_id: string
+          valor_passagem?: number | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          destino?: string
+          id?: string
+          origem?: string
+          tempo_voo?: string | null
+          updated_at?: string
+          usuario_id?: string
+          valor_passagem?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'rotas_aereas_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       sala_espera: {
         Row: {
           agendamento_id: string
@@ -1780,6 +2038,47 @@ export type Database = {
           },
           {
             foreignKeyName: 'testes_pacientes_usuario_id_fkey'
+            columns: ['usuario_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      testes_psicologicos: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          id: string
+          nome: string
+          tempo_aplicacao: string | null
+          updated_at: string
+          usuario_id: string
+          valor_unitario: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          id?: string
+          nome: string
+          tempo_aplicacao?: string | null
+          updated_at?: string
+          usuario_id: string
+          valor_unitario?: number | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          id?: string
+          nome?: string
+          tempo_aplicacao?: string | null
+          updated_at?: string
+          usuario_id?: string
+          valor_unitario?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'testes_psicologicos_usuario_id_fkey'
             columns: ['usuario_id']
             isOneToOne: false
             referencedRelation: 'usuarios'
@@ -2255,6 +2554,17 @@ export const Constants = {
 //   conteudo: text (not null)
 //   data_envio: timestamp with time zone (not null, default: now())
 //   tipo: text (not null, default: 'newsletter'::text)
+// Table: consultores
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   nome: text (not null)
+//   especialidade: text (nullable)
+//   taxa_horaria_junior: numeric (nullable, default: 0)
+//   taxa_horaria_pleno: numeric (nullable, default: 0)
+//   taxa_horaria_senior: numeric (nullable, default: 0)
+//   ativo: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: contatos
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -2375,6 +2685,16 @@ export const Constants = {
 //   acao: text (not null)
 //   data_acao: timestamp with time zone (not null, default: now())
 //   usuario_id: uuid (not null)
+// Table: hoteis_regioes
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   regiao: text (not null)
+//   valor_diaria_economica: numeric (nullable, default: 0)
+//   valor_diaria_media: numeric (nullable, default: 0)
+//   valor_diaria_premium: numeric (nullable, default: 0)
+//   ativo: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: itens_proposta
 //   id: uuid (not null, default: gen_random_uuid())
 //   proposta_id: uuid (not null)
@@ -2405,6 +2725,15 @@ export const Constants = {
 //   registro_id: uuid (not null)
 //   detalhes: jsonb (not null, default: '{}'::jsonb)
 //   data_criacao: timestamp with time zone (not null, default: now())
+// Table: materiais
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   nome: text (not null)
+//   valor_unitario: numeric (nullable, default: 0)
+//   categoria: text (nullable)
+//   ativo: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: movimentacao_estoque
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -2468,6 +2797,24 @@ export const Constants = {
 //   data_consentimento_lgpd: timestamp with time zone (nullable)
 //   tipo_horario: text (nullable, default: 'avulso'::text)
 //   horario_fixo: text (nullable)
+// Table: parametros_financeiros
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   chave: text (not null)
+//   valor: text (nullable)
+//   descricao: text (nullable)
+//   tipo: text (nullable)
+//   ativo: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
+// Table: per_diem_regioes
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   regiao: text (not null)
+//   valor_diario: numeric (nullable, default: 0)
+//   ativo: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: pontos_eletronicos
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -2504,6 +2851,16 @@ export const Constants = {
 //   responsavel_id: uuid (not null)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+// Table: rotas_aereas
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   origem: text (not null)
+//   destino: text (not null)
+//   valor_passagem: numeric (nullable, default: 0)
+//   tempo_voo: text (nullable)
+//   ativo: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: sala_espera
 //   id: uuid (not null, default: gen_random_uuid())
 //   agendamento_id: uuid (not null)
@@ -2536,6 +2893,15 @@ export const Constants = {
 //   respostas_json: jsonb (nullable, default: '{}'::jsonb)
 //   data_envio: timestamp with time zone (not null, default: now())
 //   data_conclusao: timestamp with time zone (nullable)
+// Table: testes_psicologicos
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   nome: text (not null)
+//   valor_unitario: numeric (nullable, default: 0)
+//   tempo_aplicacao: text (nullable)
+//   ativo: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: usuarios
 //   id: uuid (not null)
 //   email: text (nullable)
@@ -2627,6 +2993,9 @@ export const Constants = {
 // Table: comunicacoes_campanhas
 //   PRIMARY KEY comunicacoes_campanhas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY comunicacoes_campanhas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: consultores
+//   PRIMARY KEY consultores_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY consultores_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: contatos
 //   FOREIGN KEY contatos_empresa_id_fkey: FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE
 //   PRIMARY KEY contatos_pkey: PRIMARY KEY (id)
@@ -2682,6 +3051,9 @@ export const Constants = {
 //   PRIMARY KEY historico_propostas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY historico_propostas_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
 //   FOREIGN KEY historico_propostas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: hoteis_regioes
+//   PRIMARY KEY hoteis_regioes_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY hoteis_regioes_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: itens_proposta
 //   PRIMARY KEY itens_proposta_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY itens_proposta_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
@@ -2697,6 +3069,9 @@ export const Constants = {
 // Table: logs_auditoria
 //   PRIMARY KEY logs_auditoria_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY logs_auditoria_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: materiais
+//   PRIMARY KEY materiais_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY materiais_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: movimentacao_estoque
 //   FOREIGN KEY movimentacao_estoque_item_id_fkey: FOREIGN KEY (item_id) REFERENCES estoque(id) ON DELETE CASCADE
 //   PRIMARY KEY movimentacao_estoque_pkey: PRIMARY KEY (id)
@@ -2716,6 +3091,13 @@ export const Constants = {
 //   FOREIGN KEY pacientes_convenio_id_fkey: FOREIGN KEY (convenio_id) REFERENCES convenios(id) ON DELETE SET NULL
 //   PRIMARY KEY pacientes_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY pacientes_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: parametros_financeiros
+//   PRIMARY KEY parametros_financeiros_pkey: PRIMARY KEY (id)
+//   UNIQUE parametros_financeiros_usuario_id_chave_key: UNIQUE (usuario_id, chave)
+//   FOREIGN KEY parametros_financeiros_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: per_diem_regioes
+//   PRIMARY KEY per_diem_regioes_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY per_diem_regioes_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: pontos_eletronicos
 //   PRIMARY KEY pontos_eletronicos_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY pontos_eletronicos_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id) ON DELETE CASCADE
@@ -2736,6 +3118,9 @@ export const Constants = {
 //   PRIMARY KEY propostas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY propostas_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id) ON DELETE CASCADE
 //   CHECK propostas_status_check: CHECK ((status = ANY (ARRAY['Rascunho'::text, 'Enviada'::text, 'Visualizada'::text, 'Aceita'::text, 'Rejeitada'::text])))
+// Table: rotas_aereas
+//   PRIMARY KEY rotas_aereas_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY rotas_aereas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: sala_espera
 //   FOREIGN KEY sala_espera_agendamento_id_fkey: FOREIGN KEY (agendamento_id) REFERENCES agendamentos(id) ON DELETE CASCADE
 //   UNIQUE sala_espera_agendamento_id_key: UNIQUE (agendamento_id)
@@ -2755,6 +3140,9 @@ export const Constants = {
 //   PRIMARY KEY testes_pacientes_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY testes_pacientes_template_id_fkey: FOREIGN KEY (template_id) REFERENCES templates_documentos(id) ON DELETE CASCADE
 //   FOREIGN KEY testes_pacientes_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: testes_psicologicos
+//   PRIMARY KEY testes_psicologicos_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY testes_psicologicos_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: usuarios
 //   FOREIGN KEY usuarios_id_fkey: FOREIGN KEY (id) REFERENCES auth.users(id) ON DELETE CASCADE
 //   FOREIGN KEY usuarios_parent_id_fkey: FOREIGN KEY (parent_id) REFERENCES usuarios(id)
@@ -2809,6 +3197,12 @@ export const Constants = {
 //   Policy "campanhas_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+// Table: consultores
+//   Policy "consultores_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+//   Policy "team_select_consultores" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((usuario_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
 // Table: contatos
 //   Policy "contatos_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
@@ -2869,6 +3263,12 @@ export const Constants = {
 //   Policy "historico_propostas_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = historico_propostas.proposta_id) AND ((p.responsavel_id = auth.uid()) OR ((p.responsavel_id IN ( SELECT usuarios.id            FROM usuarios           WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))))))
 //     WITH CHECK: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = historico_propostas.proposta_id) AND (p.responsavel_id = auth.uid()))))
+// Table: hoteis_regioes
+//   Policy "hoteis_regioes_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+//   Policy "team_select_hoteis_regioes" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((usuario_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
 // Table: itens_proposta
 //   Policy "itens_proposta_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = itens_proposta.proposta_id) AND ((p.responsavel_id = auth.uid()) OR ((p.responsavel_id IN ( SELECT usuarios.id            FROM usuarios           WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))))))
@@ -2885,6 +3285,12 @@ export const Constants = {
 //   Policy "logs_auditoria_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+// Table: materiais
+//   Policy "materiais_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+//   Policy "team_select_materiais" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((usuario_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
 // Table: movimentacao_estoque
 //   Policy "movimentacao_estoque_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
@@ -2911,6 +3317,18 @@ export const Constants = {
 //   Policy "pacientes_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+// Table: parametros_financeiros
+//   Policy "parametros_financeiros_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+//   Policy "team_select_parametros_financeiros" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((usuario_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
+// Table: per_diem_regioes
+//   Policy "per_diem_regioes_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+//   Policy "team_select_per_diem_regioes" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((usuario_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
 // Table: pontos_eletronicos
 //   Policy "pontos_eletronicos_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: true
@@ -2933,6 +3351,12 @@ export const Constants = {
 //     WITH CHECK: (responsavel_id = auth.uid())
 //   Policy "propostas_team_policy" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: ((responsavel_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
+// Table: rotas_aereas
+//   Policy "rotas_aereas_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+//   Policy "team_select_rotas_aereas" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((usuario_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
 // Table: sala_espera
 //   Policy "Anon insert sala_espera" (INSERT, PERMISSIVE) roles={public}
 //     WITH CHECK: true
@@ -2953,6 +3377,12 @@ export const Constants = {
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: testes_pacientes
 //   Policy "testes_pacientes_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+// Table: testes_psicologicos
+//   Policy "team_select_testes_psicologicos" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((usuario_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
+//   Policy "testes_psicologicos_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: usuarios
@@ -3764,6 +4194,8 @@ export const Constants = {
 //   audit_agendamentos_trigger: CREATE TRIGGER audit_agendamentos_trigger AFTER INSERT OR DELETE OR UPDATE ON public.agendamentos FOR EACH ROW EXECUTE FUNCTION log_audit_action()
 // Table: atividades
 //   set_atividades_updated_at: CREATE TRIGGER set_atividades_updated_at BEFORE UPDATE ON public.atividades FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+// Table: consultores
+//   set_consultores_updated_at: CREATE TRIGGER set_consultores_updated_at BEFORE UPDATE ON public.consultores FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: contatos
 //   set_contatos_updated_at: CREATE TRIGGER set_contatos_updated_at BEFORE UPDATE ON public.contatos FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 //   trg_automacao_contatos: CREATE TRIGGER trg_automacao_contatos AFTER INSERT ON public.contatos FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
@@ -3775,18 +4207,30 @@ export const Constants = {
 //   trigger_check_low_stock: CREATE TRIGGER trigger_check_low_stock AFTER INSERT OR UPDATE OF quantidade, quantidade_minima ON public.estoque FOR EACH ROW EXECUTE FUNCTION check_low_stock()
 // Table: financeiro
 //   audit_financeiro_trigger: CREATE TRIGGER audit_financeiro_trigger AFTER INSERT OR DELETE OR UPDATE ON public.financeiro FOR EACH ROW EXECUTE FUNCTION log_audit_action()
+// Table: hoteis_regioes
+//   set_hoteis_regioes_updated_at: CREATE TRIGGER set_hoteis_regioes_updated_at BEFORE UPDATE ON public.hoteis_regioes FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: laudos
 //   audit_laudos_trigger: CREATE TRIGGER audit_laudos_trigger AFTER INSERT OR DELETE OR UPDATE ON public.laudos FOR EACH ROW EXECUTE FUNCTION log_audit_action()
+// Table: materiais
+//   set_materiais_updated_at: CREATE TRIGGER set_materiais_updated_at BEFORE UPDATE ON public.materiais FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: oportunidades
 //   log_oportunidade_estagio_trigger: CREATE TRIGGER log_oportunidade_estagio_trigger AFTER INSERT OR UPDATE ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION log_oportunidade_estagio()
 //   set_oportunidades_updated_at: CREATE TRIGGER set_oportunidades_updated_at BEFORE UPDATE ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 //   trg_automacao_oportunidades_ins: CREATE TRIGGER trg_automacao_oportunidades_ins AFTER INSERT ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
 //   trg_automacao_oportunidades_upd: CREATE TRIGGER trg_automacao_oportunidades_upd AFTER UPDATE OF estagio ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
+// Table: parametros_financeiros
+//   set_parametros_financeiros_updated_at: CREATE TRIGGER set_parametros_financeiros_updated_at BEFORE UPDATE ON public.parametros_financeiros FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+// Table: per_diem_regioes
+//   set_per_diem_regioes_updated_at: CREATE TRIGGER set_per_diem_regioes_updated_at BEFORE UPDATE ON public.per_diem_regioes FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: propostas
 //   set_propostas_updated_at: CREATE TRIGGER set_propostas_updated_at BEFORE UPDATE ON public.propostas FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 //   trg_generate_numero_proposta: CREATE TRIGGER trg_generate_numero_proposta BEFORE INSERT ON public.propostas FOR EACH ROW EXECUTE FUNCTION generate_numero_proposta()
 //   trg_log_proposta_creation: CREATE TRIGGER trg_log_proposta_creation AFTER INSERT ON public.propostas FOR EACH ROW EXECUTE FUNCTION log_proposta_creation()
 //   trg_log_proposta_status_change: CREATE TRIGGER trg_log_proposta_status_change AFTER UPDATE OF status ON public.propostas FOR EACH ROW EXECUTE FUNCTION log_proposta_status_change()
+// Table: rotas_aereas
+//   set_rotas_aereas_updated_at: CREATE TRIGGER set_rotas_aereas_updated_at BEFORE UPDATE ON public.rotas_aereas FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+// Table: testes_psicologicos
+//   set_testes_psicologicos_updated_at: CREATE TRIGGER set_testes_psicologicos_updated_at BEFORE UPDATE ON public.testes_psicologicos FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: valores_campos_personalizados
 //   set_valores_campos_personalizados_updated_at: CREATE TRIGGER set_valores_campos_personalizados_updated_at BEFORE UPDATE ON public.valores_campos_personalizados FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 
@@ -3797,6 +4241,8 @@ export const Constants = {
 //   CREATE INDEX idx_atividades_empresa_id ON public.atividades USING btree (empresa_id)
 //   CREATE INDEX idx_atividades_oportunidade_id ON public.atividades USING btree (oportunidade_id)
 //   CREATE INDEX idx_atividades_responsavel_id ON public.atividades USING btree (responsavel_id)
+// Table: consultores
+//   CREATE INDEX idx_consultores_ativo ON public.consultores USING btree (ativo)
 // Table: custos_operacionais
 //   CREATE INDEX idx_custos_operacionais_proposta_id ON public.custos_operacionais USING btree (proposta_id)
 // Table: emails_automacao
@@ -3809,11 +4255,23 @@ export const Constants = {
 //   CREATE INDEX idx_fluxos_automacao_usuario_id ON public.fluxos_automacao USING btree (usuario_id)
 // Table: historico_propostas
 //   CREATE INDEX idx_historico_propostas_proposta_id ON public.historico_propostas USING btree (proposta_id)
+// Table: hoteis_regioes
+//   CREATE INDEX idx_hoteis_regioes_ativo ON public.hoteis_regioes USING btree (ativo)
+//   CREATE INDEX idx_hoteis_regioes_regiao ON public.hoteis_regioes USING btree (regiao)
 // Table: itens_proposta
 //   CREATE INDEX idx_itens_proposta_proposta_id ON public.itens_proposta USING btree (proposta_id)
+// Table: materiais
+//   CREATE INDEX idx_materiais_ativo ON public.materiais USING btree (ativo)
 // Table: oportunidades
 //   CREATE INDEX idx_oportunidades_empresa_id ON public.oportunidades USING btree (empresa_id)
 //   CREATE INDEX idx_oportunidades_responsavel_id ON public.oportunidades USING btree (responsavel_id)
+// Table: parametros_financeiros
+//   CREATE INDEX idx_parametros_financeiros_ativo ON public.parametros_financeiros USING btree (ativo)
+//   CREATE INDEX idx_parametros_financeiros_chave ON public.parametros_financeiros USING btree (chave)
+//   CREATE UNIQUE INDEX parametros_financeiros_usuario_id_chave_key ON public.parametros_financeiros USING btree (usuario_id, chave)
+// Table: per_diem_regioes
+//   CREATE INDEX idx_per_diem_regioes_ativo ON public.per_diem_regioes USING btree (ativo)
+//   CREATE INDEX idx_per_diem_regioes_regiao ON public.per_diem_regioes USING btree (regiao)
 // Table: prontuarios
 //   CREATE UNIQUE INDEX prontuarios_paciente_id_key ON public.prontuarios USING btree (paciente_id)
 // Table: propostas
@@ -3821,5 +4279,9 @@ export const Constants = {
 //   CREATE INDEX idx_propostas_responsavel_id ON public.propostas USING btree (responsavel_id)
 //   CREATE INDEX idx_propostas_status ON public.propostas USING btree (status)
 //   CREATE UNIQUE INDEX propostas_numero_proposta_key ON public.propostas USING btree (numero_proposta)
+// Table: rotas_aereas
+//   CREATE INDEX idx_rotas_aereas_ativo ON public.rotas_aereas USING btree (ativo)
 // Table: sala_espera
 //   CREATE UNIQUE INDEX sala_espera_agendamento_id_key ON public.sala_espera USING btree (agendamento_id)
+// Table: testes_psicologicos
+//   CREATE INDEX idx_testes_psicologicos_ativo ON public.testes_psicologicos USING btree (ativo)
