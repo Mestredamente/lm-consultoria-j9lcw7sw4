@@ -20,6 +20,7 @@ import MyAgenda from './pages/MyAgenda'
 import Reports from './pages/Reports'
 import SettingsPage from './pages/Settings'
 import PlaceholderPage from './pages/PlaceholderPage'
+import Proposals from './pages/Proposals'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Auth from './pages/Auth'
@@ -110,15 +111,7 @@ const App = () => (
                           />
                         }
                       />
-                      <Route
-                        path="/proposals"
-                        element={
-                          <PlaceholderPage
-                            title="Propostas"
-                            description="Gerencie orçamentos e propostas."
-                          />
-                        }
-                      />
+                      <Route path="/proposals" element={<Proposals />} />
                       <Route
                         path="/founders"
                         element={<PlaceholderPage title="Fundadores" />}
