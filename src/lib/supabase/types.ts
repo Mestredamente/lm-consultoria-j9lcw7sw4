@@ -1772,12 +1772,14 @@ export type Database = {
       }
       propostas: {
         Row: {
+          condicoes_pagamento: string | null
           contato_id: string | null
           created_at: string
           data_emissao: string
           data_validade: string | null
           empresa_id: string | null
           id: string
+          notas_internas: string | null
           numero_proposta: string | null
           oportunidade_id: string | null
           responsavel_id: string
@@ -1786,12 +1788,14 @@ export type Database = {
           valor_total: number
         }
         Insert: {
+          condicoes_pagamento?: string | null
           contato_id?: string | null
           created_at?: string
           data_emissao?: string
           data_validade?: string | null
           empresa_id?: string | null
           id?: string
+          notas_internas?: string | null
           numero_proposta?: string | null
           oportunidade_id?: string | null
           responsavel_id: string
@@ -1800,12 +1804,14 @@ export type Database = {
           valor_total?: number
         }
         Update: {
+          condicoes_pagamento?: string | null
           contato_id?: string | null
           created_at?: string
           data_emissao?: string
           data_validade?: string | null
           empresa_id?: string | null
           id?: string
+          notas_internas?: string | null
           numero_proposta?: string | null
           oportunidade_id?: string | null
           responsavel_id?: string
@@ -2851,6 +2857,8 @@ export const Constants = {
 //   responsavel_id: uuid (not null)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+//   notas_internas: text (nullable)
+//   condicoes_pagamento: text (nullable)
 // Table: rotas_aereas
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)

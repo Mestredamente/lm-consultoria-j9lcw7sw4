@@ -22,6 +22,8 @@ import {
   CostItem,
 } from '@/components/proposals/proposal-types'
 import { NewProposalModal } from '@/components/proposals/NewProposalModal'
+import { ResumoFinanceiro } from '@/components/proposals/ResumoFinanceiro'
+import { GraficosProposal } from '@/components/proposals/GraficosProposal'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -235,65 +237,9 @@ export default function ProposalDetails() {
           <TabsTrigger value="notas">Notas Internas</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="resumo" className="mt-4">
-          <Card>
-            <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="space-y-3">
-                <h3 className="font-semibold text-lg border-b pb-2">
-                  Custos e Serviços
-                </h3>
-                <div className="flex justify-between">
-                  <span>Serviços ({items.length}):</span>{' '}
-                  <span>{fmt(summary.total_servicos)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Custos Operacionais:</span>{' '}
-                  <span>{fmt(summary.total_custos_operacionais)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>Overhead (Estimativa):</span>{' '}
-                  <span>{fmt(summary.custos_indiretos)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>Contingência (Estimativa):</span>{' '}
-                  <span>{fmt(summary.valor_contingencia)}</span>
-                </div>
-                <div className="flex justify-between font-bold pt-2 border-t">
-                  <span>Custo Total:</span>{' '}
-                  <span>{fmt(summary.custo_total)}</span>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <h3 className="font-semibold text-lg border-b pb-2">
-                  Precificação
-                </h3>
-                <div className="flex justify-between">
-                  <span>Margem (Padrão 40%):</span>{' '}
-                  <span
-                    className={`font-bold ${mc(summary.margem_percentual)}`}
-                  >
-                    {summary.margem_percentual}%
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Valor Markup:</span>{' '}
-                  <span>{fmt(summary.valor_markup)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Valor Bruto:</span>{' '}
-                  <span>{fmt(summary.valor_final_bruto)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>Impostos (Estimativa):</span>{' '}
-                  <span>{fmt(summary.impostos)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-xl text-primary pt-2 border-t">
-                  <span>Valor Final:</span>{' '}
-                  <span>{fmt(proposal.valor_total)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="resumo" className="mt-4 space-y-6">
+          <ResumoFinanceiro summary={summary} items={items} costs={costs} />
+          <GraficosProposal summary={summary} />
         </TabsContent>
 
         <TabsContent value="itens" className="mt-4">
