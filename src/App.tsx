@@ -15,6 +15,7 @@ import Companies from './pages/Companies'
 import CompanyDetails from './pages/CompanyDetails'
 import Contacts from './pages/Contacts'
 import Activities from './pages/Activities'
+import MyAgenda from './pages/MyAgenda'
 import PlaceholderPage from './pages/PlaceholderPage'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
@@ -66,6 +67,7 @@ const App = () => (
                         element={<CompanyDetails />}
                       />
                       <Route path="/activities" element={<Activities />} />
+                      <Route path="/my-agenda" element={<MyAgenda />} />
                       <Route
                         path="/pipeline"
                         element={
