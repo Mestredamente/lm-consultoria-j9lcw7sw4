@@ -41,6 +41,18 @@ export function NewProposalModal({
   )
   const [costs, setCosts] = useState<CostItem[]>([])
 
+  const [overhead, setOverhead] = useState(15)
+  const [contingencia, setContingencia] = useState(5)
+  const [margem, setMargem] = useState(40)
+  const [impostos, setImpostos] = useState(15)
+  const [dataValidade, setDataValidade] = useState(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 30)
+    return d.toISOString().split('T')[0]
+  })
+  const [condicoesPagamento, setCondicoesPagamento] = useState('')
+  const [notasInternas, setNotasInternas] = useState('')
+
   const handleNext = () => {
     if (step === 1 && (!empId || !contId)) {
       toast.error('Preencha os campos obrigatórios (Empresa e Contato)')
@@ -65,6 +77,15 @@ export function NewProposalModal({
       })),
     )
     setCosts([])
+    setOverhead(15)
+    setContingencia(5)
+    setMargem(40)
+    setImpostos(15)
+    const d = new Date()
+    d.setDate(d.getDate() + 30)
+    setDataValidade(d.toISOString().split('T')[0])
+    setCondicoesPagamento('')
+    setNotasInternas('')
   }
 
   const handleSave = () => {
@@ -82,7 +103,7 @@ export function NewProposalModal({
         if (!o) resetState()
       }}
     >
-      <DialogContent className="max-w-[90vw] md:max-w-4xl lg:max-w-5xl h-[90vh] md:h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
+      <DialogContent className="max-w-[90vw] md:max-w-4xl lg:max-w-6xl h-[90vh] md:h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
         <DialogHeader className="px-6 py-4 border-b border-border/50 bg-muted/5">
           <DialogTitle className="text-xl">Nova Proposta</DialogTitle>
           <DialogDescription>
@@ -91,7 +112,7 @@ export function NewProposalModal({
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background">
-          <div className="max-w-4xl mx-auto pb-4">
+          <div className="max-w-6xl mx-auto pb-4">
             <ProposalStepper step={step} />
             <div className="mt-8 md:mt-10">
               {step === 1 && (
@@ -111,7 +132,24 @@ export function NewProposalModal({
                 <ProposalStep3 costs={costs} setCosts={setCosts} />
               )}
               {step === 4 && (
-                <ProposalStep4 services={services} costs={costs} />
+                <ProposalStep4
+                  services={services}
+                  costs={costs}
+                  overhead={overhead}
+                  setOverhead={setOverhead}
+                  contingencia={contingencia}
+                  setContingencia={setContingencia}
+                  margem={margem}
+                  setMargem={setMargem}
+                  impostos={impostos}
+                  setImpostos={setImpostos}
+                  dataValidade={dataValidade}
+                  setDataValidade={setDataValidade}
+                  condicoesPagamento={condicoesPagamento}
+                  setCondicoesPagamento={setCondicoesPagamento}
+                  notasInternas={notasInternas}
+                  setNotasInternas={setNotasInternas}
+                />
               )}
             </div>
           </div>
@@ -135,7 +173,7 @@ export function NewProposalModal({
               onClick={handleSave}
               className="bg-green-600 hover:bg-green-700 text-white shadow-sm px-8"
             >
-              Salvar Proposta
+              Criar Proposta
             </Button>
           )}
         </DialogFooter>

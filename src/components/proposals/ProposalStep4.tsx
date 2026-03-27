@@ -1,56 +1,283 @@
-import { ServiceRow, CostItem, getCostSubtotal } from './proposal-types'
+import { ServiceRow, CostItem, calcularCustosProposal } from './proposal-types'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
+
+interface ProposalStep4Props {
+  services: ServiceRow[]
+  costs: CostItem[]
+  overhead: number
+  setOverhead: (v: number) => void
+  contingencia: number
+  setContingencia: (v: number) => void
+  margem: number
+  setMargem: (v: number) => void
+  impostos: number
+  setImpostos: (v: number) => void
+  dataValidade: string
+  setDataValidade: (v: string) => void
+  condicoesPagamento: string
+  setCondicoesPagamento: (v: string) => void
+  notasInternas: string
+  setNotasInternas: (v: string) => void
+}
 
 export function ProposalStep4({
   services,
   costs,
-}: {
-  services: ServiceRow[]
-  costs: CostItem[]
-}) {
-  const totalServices = services
-    .filter((s) => s.checked)
-    .reduce((acc, s) => acc + s.quantidade * s.valor_unitario, 0)
-  const totalCosts = costs.reduce((acc, c) => acc + getCostSubtotal(c), 0)
-  const finalValue = totalServices + totalCosts
+  overhead,
+  setOverhead,
+  contingencia,
+  setContingencia,
+  margem,
+  setMargem,
+  impostos,
+  setImpostos,
+  dataValidade,
+  setDataValidade,
+  condicoesPagamento,
+  setCondicoesPagamento,
+  notasInternas,
+  setNotasInternas,
+}: ProposalStep4Props) {
+  const summary = calcularCustosProposal(
+    services,
+    costs,
+    overhead,
+    contingencia,
+    margem,
+    impostos,
+  )
+
+  const marginColor =
+    margem > 35
+      ? 'text-green-700 bg-green-50 border-green-200'
+      : margem >= 20
+        ? 'text-yellow-700 bg-yellow-50 border-yellow-200'
+        : 'text-red-700 bg-red-50 border-red-200'
+
+  const formatBRL = (val: number) => `R$ ${val.toFixed(2)}`
+  const formatPct = (val: number) => {
+    if (summary.valor_final_liquido === 0) return '0%'
+    return `${((val / summary.valor_final_liquido) * 100).toFixed(1)}%`
+  }
+
+  const LineItem = ({
+    label,
+    value,
+    strong = false,
+  }: {
+    label: string
+    value: number
+    strong?: boolean
+  }) => (
+    <div
+      className={cn(
+        'flex justify-between items-center py-1.5',
+        strong && 'font-semibold text-foreground',
+      )}
+    >
+      <span
+        className={cn(
+          'text-sm text-muted-foreground',
+          strong && 'text-foreground',
+        )}
+      >
+        {label}
+      </span>
+      <div className="flex items-center gap-4">
+        <span className="text-sm w-16 text-right text-muted-foreground/70">
+          {formatPct(value)}
+        </span>
+        <span className={cn('text-sm text-right w-24', strong && 'text-base')}>
+          {formatBRL(value)}
+        </span>
+      </div>
+    </div>
+  )
 
   return (
-    <div className="max-w-md mx-auto py-8 space-y-8 fade-in">
+    <div className="w-full space-y-8 fade-in pb-4">
       <div className="text-center space-y-2">
         <h3 className="font-bold text-2xl text-foreground">
-          Resumo do Orçamento
+          Resumo Financeiro
         </h3>
         <p className="text-sm text-muted-foreground">
-          Confira a composição final dos valores da sua proposta antes de
-          salvar.
+          Ajuste as margens e visualize a composição inteligente da proposta.
         </p>
       </div>
 
-      <div className="space-y-4 bg-muted/20 p-6 rounded-2xl border border-border/50 shadow-sm relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-1 bg-primary h-full"></div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        {/* Lado Esquerdo - Controles */}
+        <div className="space-y-6 bg-muted/30 p-6 rounded-2xl border border-border/50 shadow-sm">
+          <h4 className="font-semibold text-lg pb-1 border-b">
+            Parâmetros Financeiros
+          </h4>
 
-        <div className="flex justify-between items-center pb-3 border-b border-border/50">
-          <span className="text-sm text-muted-foreground font-medium">
-            Total de Serviços
-          </span>
-          <span className="font-semibold text-foreground">
-            R$ {totalServices.toFixed(2)}
-          </span>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Overhead (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={overhead}
+                onChange={(e) => setOverhead(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Contingência (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={contingencia}
+                onChange={(e) => setContingencia(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Margem Desejada (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={margem}
+                onChange={(e) => setMargem(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Impostos (%)</Label>
+              <Input
+                type="number"
+                min={0}
+                value={impostos}
+                onChange={(e) => setImpostos(Number(e.target.value))}
+              />
+            </div>
+          </div>
+
+          <div className="space-y-4 pt-4 border-t">
+            <div className="space-y-2">
+              <Label>Data de Validade</Label>
+              <Input
+                type="date"
+                value={dataValidade}
+                onChange={(e) => setDataValidade(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Condições de Pagamento</Label>
+              <Textarea
+                placeholder="Ex: 50% no aceite da proposta, 50% na entrega final"
+                value={condicoesPagamento}
+                onChange={(e) => setCondicoesPagamento(e.target.value)}
+                className="resize-none h-20"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Notas Internas</Label>
+              <Textarea
+                placeholder="Observações visíveis apenas para a equipe comercial"
+                value={notasInternas}
+                onChange={(e) => setNotasInternas(e.target.value)}
+                className="resize-none h-20"
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="flex justify-between items-center pb-3 border-b border-border/50">
-          <span className="text-sm text-muted-foreground font-medium">
-            Total de Custos
-          </span>
-          <span className="font-semibold text-foreground">
-            R$ {totalCosts.toFixed(2)}
-          </span>
-        </div>
+        {/* Lado Direito - Dashboard de Resultados */}
+        <div className="space-y-6">
+          <div
+            className={cn(
+              'p-4 rounded-2xl border flex items-center justify-between shadow-sm transition-colors duration-300',
+              marginColor,
+            )}
+          >
+            <div>
+              <span className="text-sm font-medium block opacity-90">
+                Saúde da Margem
+              </span>
+              <span className="text-3xl font-bold tracking-tight">
+                {margem}%
+              </span>
+            </div>
+            <div className="text-right">
+              <span className="text-sm font-medium block opacity-90">
+                Valor de Markup
+              </span>
+              <span className="text-xl font-bold">
+                {formatBRL(summary.valor_markup)}
+              </span>
+            </div>
+          </div>
 
-        <div className="flex justify-between items-center pt-2">
-          <span className="font-bold text-lg text-foreground">Valor Final</span>
-          <span className="font-bold text-3xl text-primary tracking-tight">
-            R$ {finalValue.toFixed(2)}
-          </span>
+          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-1 bg-primary h-full"></div>
+
+            <div className="space-y-0.5">
+              <LineItem
+                label="Serviços Base"
+                value={summary.detalhamento.servicos}
+              />
+              <LineItem
+                label="Deslocamento"
+                value={summary.detalhamento.deslocamento}
+              />
+              <LineItem
+                label="Hospedagem"
+                value={summary.detalhamento.hospedagem}
+              />
+              <LineItem
+                label="Alimentação"
+                value={summary.detalhamento.alimentacao}
+              />
+              <LineItem label="Testes" value={summary.detalhamento.testes} />
+              <LineItem
+                label="Materiais"
+                value={summary.detalhamento.materiais}
+              />
+            </div>
+
+            <div className="my-3 border-b border-border/60"></div>
+            <div className="space-y-0.5">
+              <LineItem
+                label="Overhead Operacional"
+                value={summary.detalhamento.overhead}
+              />
+              <LineItem
+                label="Fundo de Contingência"
+                value={summary.detalhamento.contingencia}
+              />
+            </div>
+
+            <div className="my-3 border-b border-border/60"></div>
+            <div className="space-y-0.5">
+              <LineItem
+                label="Custo Total (Break-even)"
+                value={summary.custo_total}
+                strong
+              />
+              <LineItem label="Margem Aplicada" value={summary.valor_markup} />
+            </div>
+
+            <div className="my-3 border-b border-border/60"></div>
+            <div className="space-y-0.5">
+              <LineItem
+                label="Valor Bruto da Proposta"
+                value={summary.valor_final_bruto}
+                strong
+              />
+              <LineItem label="Previsão de Impostos" value={summary.impostos} />
+            </div>
+
+            <div className="mt-5 pt-5 border-t border-border flex justify-between items-center">
+              <span className="font-bold text-lg text-foreground">
+                Valor Final Líquido
+              </span>
+              <span className="font-bold text-3xl text-primary tracking-tight">
+                {formatBRL(summary.valor_final_liquido)}
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

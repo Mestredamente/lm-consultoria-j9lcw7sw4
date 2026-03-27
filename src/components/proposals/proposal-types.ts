@@ -113,3 +113,104 @@ export function getCostSubtotal(c: CostItem) {
       return 0
   }
 }
+
+export interface FinancialSummary {
+  detalhamento: {
+    servicos: number
+    deslocamento: number
+    hospedagem: number
+    alimentacao: number
+    testes: number
+    materiais: number
+    overhead: number
+    contingencia: number
+  }
+  total_servicos: number
+  total_custos_operacionais: number
+  custo_total: number
+  margem_percentual: number
+  valor_markup: number
+  valor_final_bruto: number
+  impostos: number
+  valor_final_liquido: number
+  custos_indiretos: number
+  valor_contingencia: number
+}
+
+export function calcularCustosProposal(
+  services: ServiceRow[],
+  costs: CostItem[],
+  overheadPercent: number = 15,
+  contingencyPercent: number = 5,
+  marginPercent: number = 40,
+  taxPercent: number = 15,
+): FinancialSummary {
+  const total_servicos = services
+    .filter((s) => s.checked)
+    .reduce((acc, s) => acc + s.quantidade * s.valor_unitario, 0)
+
+  let deslocamento = 0
+  let hospedagem = 0
+  let alimentacao = 0
+  let testes = 0
+  let materiais = 0
+
+  costs.forEach((c) => {
+    const sub = getCostSubtotal(c)
+    switch (c.type) {
+      case 'Deslocamento':
+        deslocamento += sub
+        break
+      case 'Hospedagem':
+        hospedagem += sub
+        break
+      case 'Alimentação':
+        alimentacao += sub
+        break
+      case 'Testes Psicológicos':
+        testes += sub
+        break
+      case 'Materiais':
+        materiais += sub
+        break
+    }
+  })
+
+  const total_custos_operacionais =
+    deslocamento + hospedagem + alimentacao + testes + materiais
+  const custo_base = total_servicos + total_custos_operacionais
+
+  const custos_indiretos = custo_base * (overheadPercent / 100)
+  const valor_contingencia =
+    (custo_base + custos_indiretos) * (contingencyPercent / 100)
+
+  const custo_total = custo_base + custos_indiretos + valor_contingencia
+
+  const valor_markup = custo_total * (marginPercent / 100)
+  const valor_final_bruto = custo_total + valor_markup
+  const impostos = valor_final_bruto * (taxPercent / 100)
+  const valor_final_liquido = valor_final_bruto + impostos
+
+  return {
+    detalhamento: {
+      servicos: total_servicos,
+      deslocamento,
+      hospedagem,
+      alimentacao,
+      testes,
+      materiais,
+      overhead: custos_indiretos,
+      contingencia: valor_contingencia,
+    },
+    total_servicos,
+    total_custos_operacionais,
+    custo_total,
+    margem_percentual: marginPercent,
+    valor_markup,
+    valor_final_bruto,
+    impostos,
+    valor_final_liquido,
+    custos_indiretos,
+    valor_contingencia,
+  }
+}
