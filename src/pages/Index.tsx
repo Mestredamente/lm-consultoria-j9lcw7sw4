@@ -27,8 +27,10 @@ import {
 } from '@/components/ui/chart'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/hooks/use-auth'
 
 export default function Index() {
+  const { role } = useAuth()
   const [period, setPeriod] = useState<'30' | '90' | '365'>('30')
 
   const { companies, loading: loadingCompanies } = useCompanies()
@@ -146,10 +148,16 @@ export default function Index() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Dashboard
+            {role === 'vendedor'
+              ? 'Meu Painel de Vendas'
+              : role === 'gerente'
+                ? 'Painel da Equipe'
+                : 'Visão Geral do Negócio'}
           </h1>
           <p className="text-muted-foreground">
-            Visão geral do seu negócio e pipeline de vendas
+            {role === 'vendedor'
+              ? 'Acompanhe suas metas, oportunidades e atividades diárias'
+              : 'Visão consolidada do negócio e pipeline de vendas'}
           </p>
         </div>
 

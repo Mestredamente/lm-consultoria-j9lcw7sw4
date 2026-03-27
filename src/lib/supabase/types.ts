@@ -26,6 +26,7 @@ export type Database = {
           is_online: boolean | null
           justificativa_falta: string | null
           link_sala_virtual: string | null
+          motivo_cancelamento: string | null
           paciente_id: string
           room_id: string | null
           sala_virtual_token: string | null
@@ -51,6 +52,7 @@ export type Database = {
           is_online?: boolean | null
           justificativa_falta?: string | null
           link_sala_virtual?: string | null
+          motivo_cancelamento?: string | null
           paciente_id: string
           room_id?: string | null
           sala_virtual_token?: string | null
@@ -76,6 +78,7 @@ export type Database = {
           is_online?: boolean | null
           justificativa_falta?: string | null
           link_sala_virtual?: string | null
+          motivo_cancelamento?: string | null
           paciente_id?: string
           room_id?: string | null
           sala_virtual_token?: string | null
@@ -1826,6 +1829,8 @@ export type Database = {
       }
       get_patient_portal_data: { Args: { p_hash: string }; Returns: Json }
       get_prescricao_publica: { Args: { p_hash: string }; Returns: Json }
+      get_tenant_id: { Args: never; Returns: string }
+      get_user_role: { Args: never; Returns: string }
       pay_appointment_portal: {
         Args: { p_agendamento_id: string; p_hash: string }
         Returns: boolean
@@ -2006,6 +2011,7 @@ export const Constants = {
 //   sala_virtual_token: text (nullable)
 //   sala_virtual_token_valid_from: timestamp with time zone (nullable)
 //   sala_virtual_token_expires_at: timestamp with time zone (nullable)
+//   motivo_cancelamento: text (nullable)
 // Table: appointments
 //   id: uuid (not null, default: gen_random_uuid())
 //   patient_name: text (not null)
@@ -2539,6 +2545,8 @@ export const Constants = {
 //   Policy "atividades_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (responsavel_id = auth.uid())
 //     WITH CHECK: (responsavel_id = auth.uid())
+//   Policy "team_select_atividades" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((responsavel_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
 // Table: avaliacoes
 //   Policy "anon_avaliacoes_insert" (INSERT, PERMISSIVE) roles={anon}
 //     WITH CHECK: true
@@ -2568,6 +2576,8 @@ export const Constants = {
 //   Policy "contatos_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+//   Policy "team_select_contatos" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((usuario_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
 // Table: convenios
 //   Policy "convenios_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
@@ -2584,6 +2594,8 @@ export const Constants = {
 //   Policy "empresas_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+//   Policy "team_select_empresas" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((usuario_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
 // Table: estoque
 //   Policy "estoque_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
@@ -2642,6 +2654,8 @@ export const Constants = {
 //   Policy "oportunidades_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (responsavel_id = auth.uid())
 //     WITH CHECK: (responsavel_id = auth.uid())
+//   Policy "team_select_oportunidades" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((responsavel_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
 // Table: pacientes
 //   Policy "anon_select_pacientes" (SELECT, PERMISSIVE) roles={anon}
 //     USING: true
@@ -2687,8 +2701,13 @@ export const Constants = {
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: usuarios
+//   Policy "admin_update_usuarios" (UPDATE, PERMISSIVE) roles={authenticated}
+//     USING: ((get_user_role() = 'admin'::text) AND (COALESCE(parent_id, id) = get_tenant_id()))
+//     WITH CHECK: ((get_user_role() = 'admin'::text) AND (COALESCE(parent_id, id) = get_tenant_id()))
 //   Policy "anon_read_usuarios" (SELECT, PERMISSIVE) roles={anon}
 //     USING: true
+//   Policy "parent_select_usuarios" (SELECT, PERMISSIVE) roles={authenticated}
+//     USING: ((COALESCE(parent_id, id) = get_tenant_id()) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
 //   Policy "usuarios_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (id = auth.uid())
 //     WITH CHECK: (id = auth.uid())
@@ -2725,13 +2744,11 @@ export const Constants = {
 //       v_paciente_id uuid;
 //       v_data_hora timestamptz;
 //   BEGIN
-//       -- Verifica autenticidade do paciente pelo hash
 //       SELECT id INTO v_paciente_id FROM public.pacientes WHERE hash_anamnese = p_hash LIMIT 1;
 //       IF v_paciente_id IS NULL THEN
 //           RETURN false;
 //       END IF;
 //
-//       -- Pega os dados do agendamento
 //       SELECT data_hora INTO v_data_hora FROM public.agendamentos
 //       WHERE id = p_agendamento_id AND paciente_id = v_paciente_id AND status = 'agendado';
 //
@@ -2739,14 +2756,14 @@ export const Constants = {
 //           RETURN false;
 //       END IF;
 //
-//       -- Verifica regra de 24 horas
 //       IF v_data_hora < (NOW() + interval '24 hours') THEN
 //           RAISE EXCEPTION 'Cancelamento permitido apenas com 24 horas de antecedência.';
 //       END IF;
 //
-//       -- Atualiza o status e a justificativa
 //       UPDATE public.agendamentos
-//       SET status = 'desmarcou', justificativa_falta = p_justificativa
+//       SET status = 'desmarcou',
+//           justificativa_falta = p_justificativa,
+//           motivo_cancelamento = p_justificativa
 //       WHERE id = p_agendamento_id;
 //
 //       RETURN FOUND;
@@ -3069,6 +3086,26 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION get_tenant_id()
+//   CREATE OR REPLACE FUNCTION public.get_tenant_id()
+//    RETURNS uuid
+//    LANGUAGE sql
+//    SECURITY DEFINER
+//    SET search_path TO 'public'
+//   AS $function$
+//     SELECT COALESCE(parent_id, id) FROM public.usuarios WHERE id = auth.uid();
+//   $function$
+//
+// FUNCTION get_user_role()
+//   CREATE OR REPLACE FUNCTION public.get_user_role()
+//    RETURNS text
+//    LANGUAGE sql
+//    SECURITY DEFINER
+//    SET search_path TO 'public'
+//   AS $function$
+//     SELECT role FROM public.usuarios WHERE id = auth.uid();
+//   $function$
+//
 // FUNCTION handle_new_user()
 //   CREATE OR REPLACE FUNCTION public.handle_new_user()
 //    RETURNS trigger
@@ -3357,6 +3394,8 @@ export const Constants = {
 //       v_usuario record;
 //       v_paciente record;
 //       v_msg text;
+//       req_id bigint;
+//       base_url text;
 //   BEGIN
 //       IF NEW.status = 'confirmado' AND OLD.status != 'confirmado' THEN
 //           SELECT * INTO v_usuario FROM public.usuarios WHERE id = NEW.usuario_id;
@@ -3373,6 +3412,20 @@ export const Constants = {
 //
 //               INSERT INTO public.historico_mensagens (usuario_id, paciente_id, tipo, conteudo, status_envio)
 //               VALUES (NEW.usuario_id, NEW.paciente_id, 'pre_consulta', v_msg, 'enviado');
+//
+//               base_url := 'https://qkxjdsdvxxgtdmlivxue.supabase.co/functions/v1';
+//               IF v_paciente.telefone IS NOT NULL THEN
+//                 SELECT net.http_post(
+//                     url:=(base_url || '/enviar_mensagem_whatsapp'),
+//                     headers:='{"Content-Type": "application/json"}'::jsonb,
+//                     body:=json_build_object(
+//                         'tipo_whatsapp', COALESCE(v_usuario.whatsapp_tipo, 'padrao'),
+//                         'telefone', v_paciente.telefone,
+//                         'mensagem', v_msg,
+//                         'usuario_id', NEW.usuario_id
+//                     )::jsonb
+//                 ) INTO req_id;
+//               END IF;
 //           END IF;
 //
 //           INSERT INTO public.notificacoes (usuario_id, titulo, mensagem)
