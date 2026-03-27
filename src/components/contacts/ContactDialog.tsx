@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { toast } from 'sonner'
 import { useContacts, Contact } from '@/contexts/ContactsContext'
 import { useCompanies } from '@/contexts/CompaniesContext'
 import { Button } from '@/components/ui/button'
@@ -32,11 +33,11 @@ import {
 
 const formSchema = z.object({
   name: z.string().min(2, 'Nome é obrigatório'),
-  position: z.string().min(2, 'Cargo é obrigatório'),
-  email: z.string().email('E-mail inválido'),
-  phone: z.string().min(8, 'Telefone inválido'),
+  position: z.string().optional(),
+  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
+  phone: z.string().optional(),
   linkedin: z.string().url('URL inválida').optional().or(z.literal('')),
-  companyId: z.string().min(1, 'Empresa é obrigatória'),
+  companyId: z.string().optional(),
   notes: z.string().optional(),
 })
 
@@ -53,6 +54,7 @@ export function ContactDialog({
 }: ContactDialogProps) {
   const { addContact, updateContact } = useContacts()
   const { companies } = useCompanies()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -72,11 +74,11 @@ export function ContactDialog({
       if (contactToEdit) {
         form.reset({
           name: contactToEdit.name,
-          position: contactToEdit.position,
-          email: contactToEdit.email,
-          phone: contactToEdit.phone,
+          position: contactToEdit.position || '',
+          email: contactToEdit.email || '',
+          phone: contactToEdit.phone || '',
           linkedin: contactToEdit.linkedin || '',
-          companyId: contactToEdit.companyId,
+          companyId: contactToEdit.companyId || '',
           notes: contactToEdit.notes || '',
         })
       } else {
@@ -93,13 +95,22 @@ export function ContactDialog({
     }
   }, [open, contactToEdit, form])
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    if (contactToEdit) {
-      updateContact(contactToEdit.id, values)
-    } else {
-      addContact(values)
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true)
+    try {
+      if (contactToEdit) {
+        await updateContact(contactToEdit.id, values as any)
+        toast.success('Contato atualizado com sucesso!')
+      } else {
+        await addContact(values as any)
+        toast.success('Contato criado com sucesso!')
+      }
+      onOpenChange(false)
+    } catch (error: any) {
+      toast.error(error.message || 'Ocorreu um erro ao salvar o contato.')
+    } finally {
+      setIsSubmitting(false)
     }
-    onOpenChange(false)
   }
 
   return (
@@ -121,7 +132,7 @@ export function ContactDialog({
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nome</FormLabel>
+                    <FormLabel>Nome *</FormLabel>
                     <FormControl>
                       <Input placeholder="Nome completo" {...field} />
                     </FormControl>
@@ -181,10 +192,11 @@ export function ContactDialog({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Selecione a empresa" />
+                          <SelectValue placeholder="Selecione a empresa (opcional)" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="none">Sem empresa</SelectItem>
                         {companies.map((company) => (
                           <SelectItem key={company.id} value={company.id}>
                             {company.name}
@@ -237,14 +249,16 @@ export function ContactDialog({
                 type="button"
                 variant="outline"
                 onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
               >
                 Cancelar
               </Button>
               <Button
                 type="submit"
                 className="bg-black text-white hover:bg-gray-800"
+                disabled={isSubmitting}
               >
-                Salvar Contato
+                {isSubmitting ? 'Salvando...' : 'Salvar Contato'}
               </Button>
             </DialogFooter>
           </form>

@@ -4,6 +4,7 @@ import React, {
   useState,
   ReactNode,
   useEffect,
+  useCallback,
 } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import { useAuth } from '@/hooks/use-auth'
@@ -24,7 +25,9 @@ interface ContactsContextType {
   addContact: (contact: Omit<Contact, 'id'>) => Promise<void>
   updateContact: (id: string, contact: Omit<Contact, 'id'>) => Promise<void>
   deleteContact: (id: string) => Promise<void>
+  refreshContacts: () => Promise<void>
   loading: boolean
+  error: string | null
 }
 
 const ContactsContext = createContext<ContactsContextType | undefined>(
@@ -34,7 +37,43 @@ const ContactsContext = createContext<ContactsContextType | undefined>(
 export function ContactsProvider({ children }: { children: ReactNode }) {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const { user } = useAuth()
+
+  const fetchContacts = useCallback(async () => {
+    if (!user) return
+    setLoading(true)
+    setError(null)
+    try {
+      const { data, error: err } = await supabase
+        .from('contatos')
+        .select('*')
+        .eq('usuario_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (err) throw err
+
+      if (data) {
+        setContacts(
+          data.map((d) => ({
+            id: d.id,
+            name: d.nome,
+            position: d.cargo || '',
+            email: d.email || '',
+            phone: d.telefone || '',
+            companyId: d.empresa_id || '',
+            linkedin: d.linkedin || '',
+            notes: d.notas || '',
+          })),
+        )
+      }
+    } catch (err: any) {
+      console.error('Error fetching contacts:', err)
+      setError(err.message || 'Falha ao carregar contatos')
+    } finally {
+      setLoading(false)
+    }
+  }, [user])
 
   useEffect(() => {
     if (user) {
@@ -43,50 +82,29 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
       setContacts([])
       setLoading(false)
     }
-  }, [user])
-
-  const fetchContacts = async () => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('contatos')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (!error && data) {
-      setContacts(
-        data.map((d) => ({
-          id: d.id,
-          name: d.nome,
-          position: d.cargo || '',
-          email: d.email || '',
-          phone: d.telefone || '',
-          companyId: d.empresa_id || '',
-          linkedin: d.linkedin || '',
-          notes: d.notas || '',
-        })),
-      )
-    }
-    setLoading(false)
-  }
+  }, [user, fetchContacts])
 
   const addContact = async (contactData: Omit<Contact, 'id'>) => {
-    if (!user) return
-    const { data, error } = await supabase
+    if (!user) throw new Error('Usuário não autenticado')
+
+    const { data, error: err } = await supabase
       .from('contatos')
       .insert({
         usuario_id: user.id,
         nome: contactData.name,
-        cargo: contactData.position,
-        email: contactData.email,
-        telefone: contactData.phone,
-        empresa_id: contactData.companyId,
-        linkedin: contactData.linkedin,
-        notas: contactData.notes,
+        cargo: contactData.position || null,
+        email: contactData.email || null,
+        telefone: contactData.phone || null,
+        empresa_id: contactData.companyId || null,
+        linkedin: contactData.linkedin || null,
+        notas: contactData.notes || null,
       })
       .select()
       .single()
 
-    if (!error && data) {
+    if (err) throw err
+
+    if (data) {
       setContacts((prev) => [
         {
           id: data.id,
@@ -107,39 +125,56 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
     id: string,
     contactData: Omit<Contact, 'id'>,
   ) => {
-    const { error } = await supabase
+    if (!user) throw new Error('Usuário não autenticado')
+
+    const { error: err } = await supabase
       .from('contatos')
       .update({
         nome: contactData.name,
-        cargo: contactData.position,
-        email: contactData.email,
-        telefone: contactData.phone,
-        empresa_id: contactData.companyId,
-        linkedin: contactData.linkedin,
-        notas: contactData.notes,
+        cargo: contactData.position || null,
+        email: contactData.email || null,
+        telefone: contactData.phone || null,
+        empresa_id: contactData.companyId || null,
+        linkedin: contactData.linkedin || null,
+        notas: contactData.notes || null,
       })
       .eq('id', id)
+      .eq('usuario_id', user.id)
 
-    if (!error) {
-      setContacts((prev) =>
-        prev.map((contact) =>
-          contact.id === id ? { ...contact, ...contactData } : contact,
-        ),
-      )
-    }
+    if (err) throw err
+
+    setContacts((prev) =>
+      prev.map((contact) =>
+        contact.id === id ? { ...contact, ...contactData } : contact,
+      ),
+    )
   }
 
   const deleteContact = async (id: string) => {
-    const { error } = await supabase.from('contatos').delete().eq('id', id)
+    if (!user) throw new Error('Usuário não autenticado')
 
-    if (!error) {
-      setContacts((prev) => prev.filter((contact) => contact.id !== id))
-    }
+    const { error: err } = await supabase
+      .from('contatos')
+      .delete()
+      .eq('id', id)
+      .eq('usuario_id', user.id)
+
+    if (err) throw err
+
+    setContacts((prev) => prev.filter((contact) => contact.id !== id))
   }
 
   return (
     <ContactsContext.Provider
-      value={{ contacts, addContact, updateContact, deleteContact, loading }}
+      value={{
+        contacts,
+        addContact,
+        updateContact,
+        deleteContact,
+        refreshContacts: fetchContacts,
+        loading,
+        error,
+      }}
     >
       {children}
     </ContactsContext.Provider>

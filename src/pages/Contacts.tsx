@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Plus, Pencil, Trash2, Search, Users } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Users, AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import { useContacts, Contact } from '@/contexts/ContactsContext'
 import { useCompanies } from '@/contexts/CompaniesContext'
 import { Button } from '@/components/ui/button'
@@ -13,14 +14,22 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { ContactDialog } from '@/components/contacts/ContactDialog'
 
 export default function Contacts() {
-  const { contacts, deleteContact } = useContacts()
+  const { contacts, deleteContact, loading, error } = useContacts()
   const { companies } = useCompanies()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [contactToEdit, setContactToEdit] = useState<Contact | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('all')
 
   const handleCreateNew = () => {
     setContactToEdit(null)
@@ -32,13 +41,19 @@ export default function Contacts() {
     setIsDialogOpen(true)
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja deletar este contato?')) {
-      deleteContact(id)
+      try {
+        await deleteContact(id)
+        toast.success('Contato deletado com sucesso')
+      } catch (err: any) {
+        toast.error(err.message || 'Erro ao deletar contato')
+      }
     }
   }
 
   const getCompanyName = (companyId: string) => {
+    if (!companyId) return 'Sem Empresa'
     const company = companies.find((c) => c.id === companyId)
     return company ? company.name : 'Empresa não encontrada'
   }
@@ -47,9 +62,13 @@ export default function Contacts() {
     const searchLower = searchTerm.toLowerCase()
     const nameMatch = contact.name.toLowerCase().includes(searchLower)
     const companyName = getCompanyName(contact.companyId).toLowerCase()
-    const companyMatch = companyName.includes(searchLower)
+    const companySearchMatch = companyName.includes(searchLower)
 
-    return nameMatch || companyMatch
+    const matchesSearch = nameMatch || companySearchMatch
+    const matchesCompany =
+      selectedCompanyId === 'all' || contact.companyId === selectedCompanyId
+
+    return matchesSearch && matchesCompany
   })
 
   return (
@@ -73,15 +92,40 @@ export default function Contacts() {
       </div>
 
       <div className="glass-card rounded-[24px] p-6 overflow-hidden">
-        <div className="mb-6 max-w-md relative">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome ou empresa..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-9 bg-white/50 border-gray-200 rounded-xl"
-          />
+        <div className="flex flex-col md:flex-row gap-4 mb-6">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome ou empresa..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9 bg-white/50 border-gray-200 rounded-xl"
+            />
+          </div>
+          <Select
+            value={selectedCompanyId}
+            onValueChange={setSelectedCompanyId}
+          >
+            <SelectTrigger className="w-full md:w-[250px] bg-white/50 border-gray-200 rounded-xl">
+              <SelectValue placeholder="Filtrar por empresa" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as empresas</SelectItem>
+              {companies.map((company) => (
+                <SelectItem key={company.id} value={company.id}>
+                  {company.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
+
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-xl flex items-center gap-2">
+            <AlertCircle className="h-5 w-5" />
+            <p>{error}</p>
+          </div>
+        )}
 
         <div className="rounded-xl overflow-hidden border border-gray-100">
           <Table>
@@ -108,7 +152,20 @@ export default function Contacts() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredContacts.length === 0 ? (
+              {loading ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={6}
+                    className="h-32 text-center text-muted-foreground"
+                  >
+                    <div className="flex items-center justify-center space-x-2">
+                      <div className="w-3 h-3 rounded-full animate-pulse bg-gray-400"></div>
+                      <div className="w-3 h-3 rounded-full animate-pulse bg-gray-400 delay-75"></div>
+                      <div className="w-3 h-3 rounded-full animate-pulse bg-gray-400 delay-150"></div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredContacts.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={6}
@@ -127,13 +184,13 @@ export default function Contacts() {
                       {contact.name}
                     </TableCell>
                     <TableCell className="text-gray-600">
-                      {contact.position}
+                      {contact.position || '-'}
                     </TableCell>
                     <TableCell className="text-gray-500 hidden md:table-cell">
-                      {contact.email}
+                      {contact.email || '-'}
                     </TableCell>
                     <TableCell className="text-gray-500 hidden lg:table-cell">
-                      {contact.phone}
+                      {contact.phone || '-'}
                     </TableCell>
                     <TableCell>
                       <Badge
