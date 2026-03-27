@@ -28,6 +28,16 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import {
   FileText,
   Search,
   Plus,
@@ -41,54 +51,7 @@ import {
 } from 'lucide-react'
 import { NewProposalModal } from '@/components/proposals/NewProposalModal'
 import { subDays, isAfter } from 'date-fns'
-
-const MOCK_PROPOSALS = [
-  {
-    id: 'mock-1',
-    numero_proposta: 'PROP-2026-001',
-    empresas: { nome: 'Tech Solutions SA' },
-    contatos: { nome: 'João Silva' },
-    valor_total: 15000,
-    status: 'Rascunho',
-    data_emissao: new Date().toISOString(),
-  },
-  {
-    id: 'mock-2',
-    numero_proposta: 'PROP-2026-002',
-    empresas: { nome: 'Indústria Global' },
-    contatos: { nome: 'Carlos Souza' },
-    valor_total: 32500,
-    status: 'Enviada',
-    data_emissao: subDays(new Date(), 2).toISOString(),
-  },
-  {
-    id: 'mock-3',
-    numero_proposta: 'PROP-2026-003',
-    empresas: { nome: 'Varejo Express' },
-    contatos: { nome: 'Ana Oliveira' },
-    valor_total: 8900,
-    status: 'Visualizada',
-    data_emissao: subDays(new Date(), 5).toISOString(),
-  },
-  {
-    id: 'mock-4',
-    numero_proposta: 'PROP-2026-004',
-    empresas: { nome: 'Mega Corp' },
-    contatos: { nome: 'Roberto Alves' },
-    valor_total: 45000,
-    status: 'Aceita',
-    data_emissao: subDays(new Date(), 10).toISOString(),
-  },
-  {
-    id: 'mock-5',
-    numero_proposta: 'PROP-2026-005',
-    empresas: { nome: 'Startup BR' },
-    contatos: { nome: 'Marina Costa' },
-    valor_total: 12000,
-    status: 'Rejeitada',
-    data_emissao: subDays(new Date(), 15).toISOString(),
-  },
-]
+import { toast } from 'sonner'
 
 export default function Proposals() {
   const { user } = useAuth()
@@ -97,7 +60,14 @@ export default function Proposals() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState('Todos')
   const [periodFilter, setPeriodFilter] = useState('Todos')
+
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingProposalId, setEditingProposalId] = useState<string | null>(
+    null,
+  )
+
+  const [proposalToDelete, setProposalToDelete] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -114,20 +84,45 @@ export default function Proposals() {
           `
           *,
           empresas (nome),
-          contatos (nome)
+          contatos (nome),
+          usuarios (nome)
         `,
         )
         .order('created_at', { ascending: false })
 
       if (error) throw error
-
-      setPropostas(data && data.length > 0 ? data : MOCK_PROPOSALS)
-    } catch (error) {
-      console.error('Error fetching propostas:', error)
-      setPropostas(MOCK_PROPOSALS)
+      setPropostas(data || [])
+    } catch (error: any) {
+      toast.error('Erro ao buscar propostas: ' + error.message)
+      setPropostas([])
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!proposalToDelete) return
+    try {
+      setIsDeleting(true)
+      const { error } = await supabase
+        .from('propostas')
+        .delete()
+        .eq('id', proposalToDelete)
+      if (error) throw error
+
+      toast.success('Proposta deletada com sucesso!')
+      fetchPropostas()
+    } catch (error: any) {
+      toast.error('Erro ao deletar proposta: ' + error.message)
+    } finally {
+      setIsDeleting(false)
+      setProposalToDelete(null)
+    }
+  }
+
+  const openEditModal = (id: string) => {
+    setEditingProposalId(id)
+    setIsModalOpen(true)
   }
 
   const getStatusBadge = (status: string) => {
@@ -175,9 +170,10 @@ export default function Proposals() {
 
   const filteredPropostas = useMemo(() => {
     return propostas.filter((p) => {
+      const searchLower = searchTerm.toLowerCase()
       const matchesSearch =
-        p.numero_proposta?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.empresas?.nome?.toLowerCase().includes(searchTerm.toLowerCase())
+        p.numero_proposta?.toLowerCase().includes(searchLower) ||
+        p.empresas?.nome?.toLowerCase().includes(searchLower)
 
       const matchesStatus =
         statusFilter === 'Todos' || p.status === statusFilter
@@ -211,11 +207,13 @@ export default function Proposals() {
           </p>
         </div>
         <Button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setEditingProposalId(null)
+            setIsModalOpen(true)
+          }}
           className="flex items-center gap-2 shadow-sm"
         >
-          <Plus className="h-4 w-4" />
-          Nova Proposta
+          <Plus className="h-4 w-4" /> Nova Proposta
         </Button>
       </div>
 
@@ -315,10 +313,12 @@ export default function Proposals() {
                         variant="outline"
                         size="sm"
                         className="mt-2"
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={() => {
+                          setEditingProposalId(null)
+                          setIsModalOpen(true)
+                        }}
                       >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Criar Nova Proposta
+                        <Plus className="h-4 w-4 mr-2" /> Criar Nova Proposta
                       </Button>
                     </div>
                   </TableCell>
@@ -343,6 +343,7 @@ export default function Proposals() {
                           <Calendar className="h-3.5 w-3.5 text-gray-400" />
                           {new Date(proposta.data_emissao).toLocaleDateString(
                             'pt-BR',
+                            { timeZone: 'UTC' },
                           )}
                         </div>
                       ) : (
@@ -370,21 +371,23 @@ export default function Proposals() {
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
                           <DropdownMenuItem className="cursor-pointer">
-                            <Eye className="mr-2 h-4 w-4" />
-                            Visualizar
+                            <Eye className="mr-2 h-4 w-4" /> Visualizar
                           </DropdownMenuItem>
-                          <DropdownMenuItem className="cursor-pointer">
-                            <Edit className="mr-2 h-4 w-4" />
-                            Editar Proposta
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => openEditModal(proposta.id)}
+                          >
+                            <Edit className="mr-2 h-4 w-4" /> Editar Proposta
                           </DropdownMenuItem>
                           <DropdownMenuItem className="cursor-pointer text-blue-600 focus:text-blue-600 focus:bg-blue-50">
-                            <Send className="mr-2 h-4 w-4" />
-                            Enviar
+                            <Send className="mr-2 h-4 w-4" /> Enviar
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50">
-                            <Trash className="mr-2 h-4 w-4" />
-                            Excluir
+                          <DropdownMenuItem
+                            className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                            onClick={() => setProposalToDelete(proposta.id)}
+                          >
+                            <Trash className="mr-2 h-4 w-4" /> Excluir
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -399,9 +402,40 @@ export default function Proposals() {
 
       <NewProposalModal
         open={isModalOpen}
-        onOpenChange={setIsModalOpen}
+        onOpenChange={(open) => {
+          setIsModalOpen(open)
+          if (!open) setEditingProposalId(null)
+        }}
         onSuccess={fetchPropostas}
+        proposalId={editingProposalId}
       />
+
+      <AlertDialog
+        open={!!proposalToDelete}
+        onOpenChange={(open) => !open && setProposalToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja deletar esta proposta? Esta ação não pode
+              ser desfeita e removerá todos os itens e custos associados.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {isDeleting ? 'Deletando...' : 'Deletar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

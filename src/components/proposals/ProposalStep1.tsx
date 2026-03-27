@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -7,11 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  MOCK_EMPRESAS,
-  MOCK_CONTATOS,
-  MOCK_OPORTUNIDADES,
-} from './proposal-types'
+import { supabase } from '@/lib/supabase/client'
 
 export function ProposalStep1({
   empId,
@@ -28,13 +24,37 @@ export function ProposalStep1({
   optId: string
   setOptId: (v: string) => void
 }) {
+  const [empresas, setEmpresas] = useState<any[]>([])
+  const [contatos, setContatos] = useState<any[]>([])
+  const [oportunidades, setOportunidades] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      const [empRes, contRes, optRes] = await Promise.all([
+        supabase.from('empresas').select('id, nome').order('nome'),
+        supabase.from('contatos').select('id, nome, empresa_id').order('nome'),
+        supabase
+          .from('oportunidades')
+          .select('id, nome, empresa_id')
+          .order('nome'),
+      ])
+      if (empRes.data) setEmpresas(empRes.data)
+      if (contRes.data) setContatos(contRes.data)
+      if (optRes.data) setOportunidades(optRes.data)
+      setLoading(false)
+    }
+    fetchData()
+  }, [])
+
   const filteredContatos = useMemo(
-    () => MOCK_CONTATOS.filter((c) => c.empresa_id === empId),
-    [empId],
+    () => contatos.filter((c) => c.empresa_id === empId),
+    [contatos, empId],
   )
   const filteredOportunidades = useMemo(
-    () => MOCK_OPORTUNIDADES.filter((o) => o.empresa_id === empId),
-    [empId],
+    () => oportunidades.filter((o) => o.empresa_id === empId),
+    [oportunidades, empId],
   )
 
   return (
@@ -50,12 +70,17 @@ export function ProposalStep1({
             setContId('')
             setOptId('')
           }}
+          disabled={loading}
         >
           <SelectTrigger className="w-full">
-            <SelectValue placeholder="Selecione a empresa cliente" />
+            <SelectValue
+              placeholder={
+                loading ? 'Carregando...' : 'Selecione a empresa cliente'
+              }
+            />
           </SelectTrigger>
           <SelectContent>
-            {MOCK_EMPRESAS.map((e) => (
+            {empresas.map((e) => (
               <SelectItem key={e.id} value={e.id}>
                 {e.nome}
               </SelectItem>
@@ -68,7 +93,11 @@ export function ProposalStep1({
         <Label>
           Contato <span className="text-destructive">*</span>
         </Label>
-        <Select value={contId} onValueChange={setContId} disabled={!empId}>
+        <Select
+          value={contId}
+          onValueChange={setContId}
+          disabled={!empId || loading}
+        >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Selecione o contato" />
           </SelectTrigger>
@@ -78,17 +107,27 @@ export function ProposalStep1({
                 {c.nome}
               </SelectItem>
             ))}
+            {filteredContatos.length === 0 && empId && (
+              <div className="p-2 text-sm text-muted-foreground text-center">
+                Nenhum contato encontrado
+              </div>
+            )}
           </SelectContent>
         </Select>
       </div>
 
       <div className="space-y-2">
         <Label>Oportunidade Comercial (Opcional)</Label>
-        <Select value={optId} onValueChange={setOptId} disabled={!empId}>
+        <Select
+          value={optId}
+          onValueChange={setOptId}
+          disabled={!empId || loading}
+        >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Vincular a uma oportunidade" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="none">Nenhuma</SelectItem>
             {filteredOportunidades.map((o) => (
               <SelectItem key={o.id} value={o.id}>
                 {o.nome}
