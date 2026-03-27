@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard,
   Users,
+  Building2,
   Kanban,
   Activity,
   CheckSquare,
@@ -18,6 +19,7 @@ import {
 const navItems = [
   { icon: LayoutDashboard, label: 'Painel', path: '/' },
   { icon: Users, label: 'Leads', path: '/leads' },
+  { icon: Building2, label: 'Empresas', path: '/companies' },
   { icon: Kanban, label: 'Pipeline', path: '/pipeline' },
   { icon: Activity, label: 'Atividades', path: '/activities' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },

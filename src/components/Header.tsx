@@ -8,6 +8,7 @@ const navLinks = [
   { name: 'Fundadores', href: '/founders' },
   { name: 'Finanças', href: '/finance' },
   { name: 'Contatos', href: '/leads' },
+  { name: 'Empresas', href: '/companies' },
   { name: 'Crescimento', href: '/growth' },
   { name: 'Projetos', href: '/projects' },
 ]
