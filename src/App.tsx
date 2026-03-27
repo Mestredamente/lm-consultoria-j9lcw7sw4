@@ -18,6 +18,7 @@ import Activities from './pages/Activities'
 import Automations from './pages/Automations'
 import MyAgenda from './pages/MyAgenda'
 import Reports from './pages/Reports'
+import SettingsPage from './pages/Settings'
 import PlaceholderPage from './pages/PlaceholderPage'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
@@ -72,6 +73,7 @@ const App = () => (
                       <Route path="/automations" element={<Automations />} />
                       <Route path="/my-agenda" element={<MyAgenda />} />
                       <Route path="/reports" element={<Reports />} />
+                      <Route path="/settings" element={<SettingsPage />} />
                       <Route
                         path="/pipeline"
                         element={

@@ -44,6 +44,7 @@ const NAVIGATION = [
   { name: 'Atividades', href: '/activities', icon: Briefcase },
   { name: 'Automações', href: '/automations', icon: Zap },
   { name: 'Relatórios', href: '/reports', icon: BarChart3 },
+  { name: 'Configurações', href: '/settings', icon: Settings },
 ]
 
 export default function Layout() {
@@ -278,7 +279,10 @@ export default function Layout() {
                 </div>
               </PopoverContent>
             </Popover>
-            <button className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors hidden sm:block">
+            <button
+              onClick={() => navigate('/settings')}
+              className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors hidden sm:block"
+            >
               <Settings className="w-5 h-5" />
             </button>
           </div>
