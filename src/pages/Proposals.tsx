@@ -52,8 +52,10 @@ import {
 import { NewProposalModal } from '@/components/proposals/NewProposalModal'
 import { subDays, isAfter } from 'date-fns'
 import { toast } from 'sonner'
+import { useNavigate } from 'react-router-dom'
 
 export default function Proposals() {
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [propostas, setPropostas] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -104,6 +106,18 @@ export default function Proposals() {
     if (!proposalToDelete) return
     try {
       setIsDeleting(true)
+      await supabase
+        .from('historico_propostas')
+        .delete()
+        .eq('proposta_id', proposalToDelete)
+      await supabase
+        .from('custos_operacionais')
+        .delete()
+        .eq('proposta_id', proposalToDelete)
+      await supabase
+        .from('itens_proposta')
+        .delete()
+        .eq('proposta_id', proposalToDelete)
       const { error } = await supabase
         .from('propostas')
         .delete()
@@ -370,7 +384,12 @@ export default function Proposals() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                          <DropdownMenuItem className="cursor-pointer">
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() =>
+                              navigate(`/proposals/${proposta.id}`)
+                            }
+                          >
                             <Eye className="mr-2 h-4 w-4" /> Visualizar
                           </DropdownMenuItem>
                           <DropdownMenuItem

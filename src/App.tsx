@@ -21,6 +21,7 @@ import Reports from './pages/Reports'
 import SettingsPage from './pages/Settings'
 import PlaceholderPage from './pages/PlaceholderPage'
 import Proposals from './pages/Proposals'
+import ProposalDetails from './pages/ProposalDetails'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Auth from './pages/Auth'
@@ -112,6 +113,10 @@ const App = () => (
                         }
                       />
                       <Route path="/proposals" element={<Proposals />} />
+                      <Route
+                        path="/proposals/:id"
+                        element={<ProposalDetails />}
+                      />
                       <Route
                         path="/founders"
                         element={<PlaceholderPage title="Fundadores" />}

@@ -3047,7 +3047,6 @@ export const Constants = {
 //   PRIMARY KEY historico_oportunidades_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY historico_oportunidades_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: historico_propostas
-//   CHECK historico_propostas_acao_check: CHECK ((acao = ANY (ARRAY['Criada'::text, 'Enviada'::text, 'Visualizada'::text, 'Aceita'::text, 'Rejeitada'::text, 'Atualizada'::text])))
 //   PRIMARY KEY historico_propostas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY historico_propostas_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
 //   FOREIGN KEY historico_propostas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
@@ -3057,7 +3056,6 @@ export const Constants = {
 // Table: itens_proposta
 //   PRIMARY KEY itens_proposta_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY itens_proposta_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
-//   CHECK itens_proposta_tipo_servico_check: CHECK ((tipo_servico = ANY (ARRAY['Consultoria'::text, 'Treinamento'::text, 'Coaching'::text, 'Diagnóstico'::text, 'Palestra'::text])))
 // Table: laudos
 //   FOREIGN KEY laudos_paciente_id_fkey: FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE CASCADE
 //   PRIMARY KEY laudos_pkey: PRIMARY KEY (id)
