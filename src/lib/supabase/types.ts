@@ -876,6 +876,73 @@ export type Database = {
           },
         ]
       }
+      oportunidades: {
+        Row: {
+          contato_id: string | null
+          created_at: string
+          data_fechamento_prevista: string | null
+          descricao: string | null
+          empresa_id: string | null
+          estagio: string
+          id: string
+          nome: string
+          probabilidade_percentual: number | null
+          responsavel_id: string
+          updated_at: string
+          valor_estimado: number | null
+        }
+        Insert: {
+          contato_id?: string | null
+          created_at?: string
+          data_fechamento_prevista?: string | null
+          descricao?: string | null
+          empresa_id?: string | null
+          estagio?: string
+          id?: string
+          nome: string
+          probabilidade_percentual?: number | null
+          responsavel_id: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Update: {
+          contato_id?: string | null
+          created_at?: string
+          data_fechamento_prevista?: string | null
+          descricao?: string | null
+          empresa_id?: string | null
+          estagio?: string
+          id?: string
+          nome?: string
+          probabilidade_percentual?: number | null
+          responsavel_id?: string
+          updated_at?: string
+          valor_estimado?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'oportunidades_contato_id_fkey'
+            columns: ['contato_id']
+            isOneToOne: false
+            referencedRelation: 'contatos'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_empresa_id_fkey'
+            columns: ['empresa_id']
+            isOneToOne: false
+            referencedRelation: 'empresas'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'oportunidades_responsavel_id_fkey'
+            columns: ['responsavel_id']
+            isOneToOne: false
+            referencedRelation: 'usuarios'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       pacientes: {
         Row: {
           anamnese: Json | null
@@ -1793,6 +1860,19 @@ export const Constants = {
 //   mensagem: text (not null)
 //   lida: boolean (not null, default: false)
 //   data_criacao: timestamp with time zone (not null, default: now())
+// Table: oportunidades
+//   id: uuid (not null, default: gen_random_uuid())
+//   nome: text (not null)
+//   empresa_id: uuid (nullable)
+//   contato_id: uuid (nullable)
+//   valor_estimado: numeric (nullable, default: 0)
+//   data_fechamento_prevista: date (nullable)
+//   probabilidade_percentual: integer (nullable, default: 0)
+//   estagio: text (not null, default: 'Prospecção'::text)
+//   responsavel_id: uuid (not null)
+//   descricao: text (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
+//   updated_at: timestamp with time zone (not null, default: now())
 // Table: pacientes
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -2006,6 +2086,13 @@ export const Constants = {
 // Table: notificacoes
 //   PRIMARY KEY notificacoes_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY notificacoes_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: oportunidades
+//   FOREIGN KEY oportunidades_contato_id_fkey: FOREIGN KEY (contato_id) REFERENCES contatos(id) ON DELETE SET NULL
+//   FOREIGN KEY oportunidades_empresa_id_fkey: FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE
+//   CHECK oportunidades_estagio_check: CHECK ((estagio = ANY (ARRAY['Prospecção'::text, 'Qualificação'::text, 'Proposta'::text, 'Negociação'::text, 'Fechamento'::text, 'Ganho'::text, 'Perdido'::text])))
+//   PRIMARY KEY oportunidades_pkey: PRIMARY KEY (id)
+//   CHECK oportunidades_probabilidade_percentual_check: CHECK (((probabilidade_percentual >= 0) AND (probabilidade_percentual <= 100)))
+//   FOREIGN KEY oportunidades_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: pacientes
 //   FOREIGN KEY pacientes_convenio_id_fkey: FOREIGN KEY (convenio_id) REFERENCES convenios(id) ON DELETE SET NULL
 //   PRIMARY KEY pacientes_pkey: PRIMARY KEY (id)
@@ -2144,6 +2231,10 @@ export const Constants = {
 //   Policy "notificacoes_update" (UPDATE, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+// Table: oportunidades
+//   Policy "oportunidades_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (responsavel_id = auth.uid())
+//     WITH CHECK: (responsavel_id = auth.uid())
 // Table: pacientes
 //   Policy "anon_select_pacientes" (SELECT, PERMISSIVE) roles={anon}
 //     USING: true
@@ -2864,10 +2955,15 @@ export const Constants = {
 //   audit_financeiro_trigger: CREATE TRIGGER audit_financeiro_trigger AFTER INSERT OR DELETE OR UPDATE ON public.financeiro FOR EACH ROW EXECUTE FUNCTION log_audit_action()
 // Table: laudos
 //   audit_laudos_trigger: CREATE TRIGGER audit_laudos_trigger AFTER INSERT OR DELETE OR UPDATE ON public.laudos FOR EACH ROW EXECUTE FUNCTION log_audit_action()
+// Table: oportunidades
+//   set_oportunidades_updated_at: CREATE TRIGGER set_oportunidades_updated_at BEFORE UPDATE ON public.oportunidades FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 
 // --- INDEXES ---
 // Table: financeiro
 //   CREATE UNIQUE INDEX financeiro_usuario_paciente_mes_ano_key ON public.financeiro USING btree (usuario_id, paciente_id, mes, ano)
+// Table: oportunidades
+//   CREATE INDEX idx_oportunidades_empresa_id ON public.oportunidades USING btree (empresa_id)
+//   CREATE INDEX idx_oportunidades_responsavel_id ON public.oportunidades USING btree (responsavel_id)
 // Table: prontuarios
 //   CREATE UNIQUE INDEX prontuarios_paciente_id_key ON public.prontuarios USING btree (paciente_id)
 // Table: sala_espera
