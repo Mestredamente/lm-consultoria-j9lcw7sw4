@@ -1,6 +1,8 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import VendasReport from '@/components/reports/VendasReport'
 import AtividadesReport from '@/components/reports/AtividadesReport'
+import { PropostasReport } from '@/components/reports/PropostasReport'
+import { FunilReport } from '@/components/reports/FunilReport'
 import { BarChart3 } from 'lucide-react'
 
 export default function Reports() {
@@ -36,12 +38,30 @@ export default function Reports() {
           >
             Atividades
           </TabsTrigger>
+          <TabsTrigger
+            value="propostas"
+            className="rounded-lg px-6 data-[state=active]:bg-black data-[state=active]:text-white"
+          >
+            Propostas
+          </TabsTrigger>
+          <TabsTrigger
+            value="funil"
+            className="rounded-lg px-6 data-[state=active]:bg-black data-[state=active]:text-white"
+          >
+            Funil Comercial
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="vendas" className="mt-0 outline-none">
           <VendasReport />
         </TabsContent>
         <TabsContent value="atividades" className="mt-0 outline-none">
           <AtividadesReport />
+        </TabsContent>
+        <TabsContent value="propostas" className="mt-0 outline-none">
+          <PropostasReport />
+        </TabsContent>
+        <TabsContent value="funil" className="mt-0 outline-none">
+          <FunilReport />
         </TabsContent>
       </Tabs>
     </div>

@@ -47,10 +47,13 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { SendEmailModal } from '@/components/proposals/SendEmailModal'
+import { ProposalsVersions } from '@/components/proposals/ProposalsVersions'
+import { useAuth } from '@/hooks/use-auth'
 
 export default function ProposalDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [proposal, setProposal] = useState<any>(null)
   const [items, setItems] = useState<any[]>([])
   const [costs, setCosts] = useState<any[]>([])
@@ -94,6 +97,21 @@ export default function ProposalDetails() {
   useEffect(() => {
     if (id) fetchDetails()
   }, [id])
+
+  const handleEditClick = async () => {
+    if (!id || !user) return
+    try {
+      // Create snapshot before edit
+      await supabase.rpc('snapshot_proposta', {
+        p_proposta_id: id,
+        p_usuario_id: user.id,
+        p_resumo: 'Edição manual',
+      })
+    } catch (e) {
+      console.error('Erro ao criar snapshot:', e)
+    }
+    setIsEditOpen(true)
+  }
 
   const handleDelete = async () => {
     setIsDeleting(true)
@@ -221,11 +239,7 @@ export default function ProposalDetails() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditOpen(true)}
-          >
+          <Button variant="outline" size="sm" onClick={handleEditClick}>
             <Edit className="w-4 h-4 mr-2" /> Editar
           </Button>
           <Button
@@ -293,6 +307,7 @@ export default function ProposalDetails() {
           <TabsTrigger value="itens">Itens ({items.length})</TabsTrigger>
           <TabsTrigger value="custos">Custos ({costs.length})</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
+          <TabsTrigger value="versoes">Versões</TabsTrigger>
           <TabsTrigger value="notas">Notas Internas</TabsTrigger>
         </TabsList>
 
@@ -410,6 +425,14 @@ export default function ProposalDetails() {
                   </p>
                 )}
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="versoes" className="mt-4">
+          <Card>
+            <CardContent className="p-6">
+              <ProposalsVersions proposalId={id!} onSuccess={fetchDetails} />
             </CardContent>
           </Card>
         </TabsContent>

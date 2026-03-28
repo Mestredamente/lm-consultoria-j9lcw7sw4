@@ -70,6 +70,7 @@ export default function Proposals() {
 
   const [proposalToDelete, setProposalToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isDuplicating, setIsDuplicating] = useState(false)
 
   useEffect(() => {
     if (user) {
@@ -137,6 +138,79 @@ export default function Proposals() {
   const openEditModal = (id: string) => {
     setEditingProposalId(id)
     setIsModalOpen(true)
+  }
+
+  const handleDuplicar = async (propostaId: string) => {
+    try {
+      setIsDuplicating(true)
+      const { data: prop, error: propErr } = await supabase
+        .from('propostas')
+        .select('*')
+        .eq('id', propostaId)
+        .single()
+      if (propErr) throw propErr
+
+      const { data: items } = await supabase
+        .from('itens_proposta')
+        .select('*')
+        .eq('proposta_id', propostaId)
+      const { data: costs } = await supabase
+        .from('custos_operacionais')
+        .select('*')
+        .eq('proposta_id', propostaId)
+
+      const { data: newProp, error: newPropErr } = await supabase
+        .from('propostas')
+        .insert({
+          empresa_id: prop.empresa_id,
+          contato_id: prop.contato_id,
+          oportunidade_id: prop.oportunidade_id,
+          responsavel_id: user?.id,
+          status: 'Rascunho',
+          valor_total: prop.valor_total,
+          notas_internas: prop.notas_internas,
+          condicoes_pagamento: prop.condicoes_pagamento,
+        })
+        .select()
+        .single()
+
+      if (newPropErr) throw newPropErr
+
+      if (items && items.length > 0) {
+        const newItems = items.map((i) => ({
+          proposta_id: newProp.id,
+          tipo_servico: i.tipo_servico,
+          descricao: i.descricao,
+          quantidade: i.quantidade,
+          valor_unitario: i.valor_unitario,
+          subtotal: i.subtotal,
+        }))
+        await supabase.from('itens_proposta').insert(newItems)
+      }
+
+      if (costs && costs.length > 0) {
+        const newCosts = costs.map((c) => ({
+          proposta_id: newProp.id,
+          tipo: c.tipo,
+          descricao: c.descricao,
+          valor: c.valor,
+        }))
+        await supabase.from('custos_operacionais').insert(newCosts)
+      }
+
+      await supabase.from('historico_propostas').insert({
+        proposta_id: newProp.id,
+        acao: `Duplicada da proposta ${prop.numero_proposta || 'original'}`,
+        usuario_id: user?.id,
+      })
+
+      toast.success('Proposta duplicada com sucesso!')
+      navigate(`/proposals/${newProp.id}`)
+    } catch (err: any) {
+      toast.error('Erro ao duplicar proposta: ' + err.message)
+    } finally {
+      setIsDuplicating(false)
+    }
   }
 
   const getStatusBadge = (status: string) => {
@@ -397,6 +471,13 @@ export default function Proposals() {
                             onClick={() => openEditModal(proposta.id)}
                           >
                             <Edit className="mr-2 h-4 w-4" /> Editar Proposta
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => handleDuplicar(proposta.id)}
+                            disabled={isDuplicating}
+                          >
+                            <FileText className="mr-2 h-4 w-4" /> Duplicar
                           </DropdownMenuItem>
                           <DropdownMenuItem className="cursor-pointer text-blue-600 focus:text-blue-600 focus:bg-blue-50">
                             <Send className="mr-2 h-4 w-4" /> Enviar

@@ -10,6 +10,8 @@ import { ProfileSettings } from '@/components/settings/ProfileSettings'
 import { TeamSettings } from '@/components/settings/TeamSettings'
 import { CustomFieldsSettings } from '@/components/settings/CustomFieldsSettings'
 import { IntegrationsSettings } from '@/components/settings/IntegrationsSettings'
+import { FinancialParametersSettings } from '@/components/settings/FinancialParametersSettings'
+import { ReferenceTablesSettings } from '@/components/settings/ReferenceTablesSettings'
 import { useAuth } from '@/hooks/use-auth'
 
 export default function Settings() {
@@ -63,6 +65,19 @@ export default function Settings() {
                   >
                     <LinkIcon className="w-4 h-4 mr-2" /> Integrações
                   </TabsTrigger>
+                  <TabsTrigger
+                    value="parametros"
+                    className="rounded-lg px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm font-medium"
+                  >
+                    <SettingsIcon className="w-4 h-4 mr-2" /> Parâmetros
+                    Financeiros
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="tabelas"
+                    className="rounded-lg px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm font-medium"
+                  >
+                    <Blocks className="w-4 h-4 mr-2" /> Tabelas de Referência
+                  </TabsTrigger>
                 </>
               )}
             </TabsList>
@@ -105,6 +120,24 @@ export default function Settings() {
               >
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                   <IntegrationsSettings />
+                </div>
+              </TabsContent>
+
+              <TabsContent
+                value="parametros"
+                className="m-0 focus-visible:outline-none"
+              >
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <FinancialParametersSettings />
+                </div>
+              </TabsContent>
+
+              <TabsContent
+                value="tabelas"
+                className="m-0 focus-visible:outline-none"
+              >
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <ReferenceTablesSettings />
                 </div>
               </TabsContent>
             </>
