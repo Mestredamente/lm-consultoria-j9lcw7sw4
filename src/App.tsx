@@ -22,6 +22,7 @@ import SettingsPage from './pages/Settings'
 import PlaceholderPage from './pages/PlaceholderPage'
 import Proposals from './pages/Proposals'
 import ProposalDetails from './pages/ProposalDetails'
+import PublicProposalView from './pages/PublicProposalView'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import Auth from './pages/Auth'
@@ -63,6 +64,10 @@ const App = () => (
                 <Sonner />
                 <Routes>
                   <Route path="/auth" element={<Auth />} />
+                  <Route
+                    path="/proposals/:id/view"
+                    element={<PublicProposalView />}
+                  />
                   <Route element={<ProtectedRoute />}>
                     <Route element={<Layout />}>
                       <Route path="/" element={<Dashboard />} />

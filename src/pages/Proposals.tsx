@@ -48,6 +48,7 @@ import {
   Calendar,
   Send,
   Filter,
+  Receipt,
 } from 'lucide-react'
 import { NewProposalModal } from '@/components/proposals/NewProposalModal'
 import { subDays, isAfter } from 'date-fns'
@@ -71,6 +72,7 @@ export default function Proposals() {
   const [proposalToDelete, setProposalToDelete] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDuplicating, setIsDuplicating] = useState(false)
+  const [isEmittingNF, setIsEmittingNF] = useState<string | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -138,6 +140,25 @@ export default function Proposals() {
   const openEditModal = (id: string) => {
     setEditingProposalId(id)
     setIsModalOpen(true)
+  }
+
+  const handleEmitirNF = async (propostaId: string) => {
+    try {
+      setIsEmittingNF(propostaId)
+      const { data, error } = await supabase.functions.invoke(
+        'emitir_nf_proposta',
+        {
+          body: { proposta_id: propostaId },
+        },
+      )
+      if (error) throw error
+      toast.success('Nota Fiscal emitida com sucesso!')
+      fetchPropostas()
+    } catch (err: any) {
+      toast.error('Erro ao emitir NF: ' + err.message)
+    } finally {
+      setIsEmittingNF(null)
+    }
   }
 
   const handleDuplicar = async (propostaId: string) => {
@@ -372,6 +393,9 @@ export default function Proposals() {
                 <TableHead className="font-semibold text-gray-600">
                   Status
                 </TableHead>
+                <TableHead className="font-semibold text-gray-600">
+                  NF
+                </TableHead>
                 <TableHead className="w-[80px]"></TableHead>
               </TableRow>
             </TableHeader>
@@ -445,6 +469,18 @@ export default function Proposals() {
                       }).format(proposta.valor_total || 0)}
                     </TableCell>
                     <TableCell>{getStatusBadge(proposta.status)}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          proposta.status_nf === 'Emitida'
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : 'bg-gray-50 text-gray-600 border-gray-200'
+                        }
+                      >
+                        {proposta.status_nf || 'Pendente'}
+                      </Badge>
+                    </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -482,6 +518,16 @@ export default function Proposals() {
                           <DropdownMenuItem className="cursor-pointer text-blue-600 focus:text-blue-600 focus:bg-blue-50">
                             <Send className="mr-2 h-4 w-4" /> Enviar
                           </DropdownMenuItem>
+                          {proposta.status === 'Aceita' &&
+                            proposta.status_nf !== 'Emitida' && (
+                              <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => handleEmitirNF(proposta.id)}
+                                disabled={isEmittingNF === proposta.id}
+                              >
+                                <Receipt className="mr-2 h-4 w-4" /> Emitir NF
+                              </DropdownMenuItem>
+                            )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"

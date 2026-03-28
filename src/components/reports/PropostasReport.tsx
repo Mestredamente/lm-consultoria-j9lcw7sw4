@@ -24,7 +24,14 @@ import {
   CheckCircle,
   FileText,
   Target,
+  ChevronDown,
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   LineChart,
   Line,
@@ -180,6 +187,33 @@ export function PropostasReport() {
     })
   }, [data])
 
+  const exportRawCSV = () => {
+    const headers = [
+      'Data de Emissão',
+      'Número da Proposta',
+      'Empresa',
+      'Responsável',
+      'Status',
+      'Status NF',
+      'Valor Total',
+    ]
+    const rows = data.map((p: any) => [
+      format(parseISO(p.data_emissao || p.created_at), 'dd/MM/yyyy'),
+      p.numero_proposta || 'S/N',
+      p.empresas?.nome || 'N/A',
+      p.usuarios?.nome || 'N/A',
+      p.status,
+      p.status_nf || 'Pendente',
+      (p.valor_total || 0).toFixed(2),
+    ])
+    const csv = [headers, ...rows].map((e) => e.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `propostas_detalhado_${format(new Date(), 'yyyyMMdd')}.csv`
+    link.click()
+  }
+
   const exportCSV = () => {
     const headers = [
       'Período',
@@ -276,12 +310,22 @@ export function PropostasReport() {
             </SelectContent>
           </Select>
         </div>
-        <Button
-          onClick={exportCSV}
-          className="bg-black hover:bg-gray-800 text-white shadow-sm shrink-0"
-        >
-          <Download className="w-4 h-4 mr-2" /> Exportar CSV
-        </Button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button className="bg-black hover:bg-gray-800 text-white shadow-sm shrink-0">
+              <Download className="w-4 h-4 mr-2" /> Exportar Relatórios{' '}
+              <ChevronDown className="ml-2 w-4 h-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={exportCSV} className="cursor-pointer">
+              Relatório Agrupado (Mensal)
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={exportRawCSV} className="cursor-pointer">
+              Listagem Detalhada de Propostas
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
