@@ -5,8 +5,10 @@ import {
   Users,
   Blocks,
   Link as LinkIcon,
+  Building,
 } from 'lucide-react'
 import { ProfileSettings } from '@/components/settings/ProfileSettings'
+import { CompanyProfileSettings } from '@/components/settings/CompanyProfileSettings'
 import { TeamSettings } from '@/components/settings/TeamSettings'
 import { CustomFieldsSettings } from '@/components/settings/CustomFieldsSettings'
 import { IntegrationsSettings } from '@/components/settings/IntegrationsSettings'
@@ -53,6 +55,12 @@ export default function Settings() {
               )}
               {role === 'admin' && (
                 <>
+                  <TabsTrigger
+                    value="empresa"
+                    className="rounded-lg px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm font-medium"
+                  >
+                    <Building className="w-4 h-4 mr-2" /> Empresa / Marca
+                  </TabsTrigger>
                   <TabsTrigger
                     value="campos"
                     className="rounded-lg px-6 py-2.5 data-[state=active]:bg-white data-[state=active]:text-black data-[state=active]:shadow-sm font-medium"
@@ -105,6 +113,15 @@ export default function Settings() {
 
           {role === 'admin' && (
             <>
+              <TabsContent
+                value="empresa"
+                className="m-0 focus-visible:outline-none"
+              >
+                <div className="max-w-2xl bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <CompanyProfileSettings />
+                </div>
+              </TabsContent>
+
               <TabsContent
                 value="campos"
                 className="m-0 focus-visible:outline-none"

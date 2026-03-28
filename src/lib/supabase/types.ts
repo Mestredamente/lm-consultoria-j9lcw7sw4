@@ -1264,6 +1264,41 @@ export type Database = {
           },
         ]
       }
+      logs_execucao_automacao: {
+        Row: {
+          created_at: string
+          detalhes: Json
+          fluxo_id: string
+          id: string
+          status: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          detalhes?: Json
+          fluxo_id: string
+          id?: string
+          status: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          detalhes?: Json
+          fluxo_id?: string
+          id?: string
+          status?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'logs_execucao_automacao_fluxo_id_fkey'
+            columns: ['fluxo_id']
+            isOneToOne: false
+            referencedRelation: 'fluxos_automacao'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       materiais: {
         Row: {
           ativo: boolean | null
@@ -2784,6 +2819,13 @@ export const Constants = {
 //   registro_id: uuid (not null)
 //   detalhes: jsonb (not null, default: '{}'::jsonb)
 //   data_criacao: timestamp with time zone (not null, default: now())
+// Table: logs_execucao_automacao
+//   id: uuid (not null, default: gen_random_uuid())
+//   fluxo_id: uuid (not null)
+//   usuario_id: uuid (not null)
+//   status: text (not null)
+//   detalhes: jsonb (not null, default: '{}'::jsonb)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: materiais
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -3100,9 +3142,9 @@ export const Constants = {
 //   FOREIGN KEY financeiro_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 //   UNIQUE financeiro_usuario_paciente_mes_ano_key: UNIQUE (usuario_id, paciente_id, mes, ano)
 // Table: fluxos_automacao
-//   CHECK fluxos_automacao_acao_check: CHECK ((acao = ANY (ARRAY['Enviar Email'::text, 'Criar Tarefa'::text, 'Atualizar Campo'::text])))
+//   CHECK fluxos_automacao_acao_check: CHECK ((acao = ANY (ARRAY['Enviar Email'::text, 'Criar Tarefa'::text, 'Atualizar Campo'::text, 'Enviar Webhook'::text])))
 //   FOREIGN KEY fluxos_automacao_empresa_id_fkey: FOREIGN KEY (empresa_id) REFERENCES empresas(id) ON DELETE CASCADE
-//   CHECK fluxos_automacao_gatilho_check: CHECK ((gatilho = ANY (ARRAY['Nova Empresa Criada'::text, 'Contato Criado'::text, 'Oportunidade Criada'::text, 'Oportunidade Ganha'::text])))
+//   CHECK fluxos_automacao_gatilho_check: CHECK ((gatilho = ANY (ARRAY['Nova Empresa Criada'::text, 'Contato Criado'::text, 'Oportunidade Criada'::text, 'Oportunidade Ganha'::text, 'Proposta Aceita'::text, 'Proposta Rejeitada'::text, 'Proposta Aguardando NF'::text])))
 //   PRIMARY KEY fluxos_automacao_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY fluxos_automacao_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
 // Table: historico_cobrancas
@@ -3138,6 +3180,10 @@ export const Constants = {
 // Table: logs_auditoria
 //   PRIMARY KEY logs_auditoria_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY logs_auditoria_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: logs_execucao_automacao
+//   FOREIGN KEY logs_execucao_automacao_fluxo_id_fkey: FOREIGN KEY (fluxo_id) REFERENCES fluxos_automacao(id) ON DELETE CASCADE
+//   PRIMARY KEY logs_execucao_automacao_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY logs_execucao_automacao_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: materiais
 //   PRIMARY KEY materiais_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY materiais_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
@@ -3356,6 +3402,10 @@ export const Constants = {
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: logs_auditoria
 //   Policy "logs_auditoria_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+// Table: logs_execucao_automacao
+//   Policy "logs_execucao_automacao_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: materiais
@@ -4454,6 +4504,8 @@ export const Constants = {
 //   set_per_diem_regioes_updated_at: CREATE TRIGGER set_per_diem_regioes_updated_at BEFORE UPDATE ON public.per_diem_regioes FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: propostas
 //   set_propostas_updated_at: CREATE TRIGGER set_propostas_updated_at BEFORE UPDATE ON public.propostas FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+//   trg_automacao_propostas_ins: CREATE TRIGGER trg_automacao_propostas_ins AFTER INSERT ON public.propostas FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
+//   trg_automacao_propostas_upd: CREATE TRIGGER trg_automacao_propostas_upd AFTER UPDATE OF status, status_nf ON public.propostas FOR EACH ROW EXECUTE FUNCTION invoke_executar_automacao()
 //   trg_generate_numero_proposta: CREATE TRIGGER trg_generate_numero_proposta BEFORE INSERT ON public.propostas FOR EACH ROW EXECUTE FUNCTION generate_numero_proposta()
 //   trg_log_proposta_creation: CREATE TRIGGER trg_log_proposta_creation AFTER INSERT ON public.propostas FOR EACH ROW EXECUTE FUNCTION log_proposta_creation()
 //   trg_log_proposta_status_change: CREATE TRIGGER trg_log_proposta_status_change AFTER UPDATE OF status ON public.propostas FOR EACH ROW EXECUTE FUNCTION log_proposta_status_change()
@@ -4491,6 +4543,9 @@ export const Constants = {
 //   CREATE INDEX idx_hoteis_regioes_regiao ON public.hoteis_regioes USING btree (regiao)
 // Table: itens_proposta
 //   CREATE INDEX idx_itens_proposta_proposta_id ON public.itens_proposta USING btree (proposta_id)
+// Table: logs_execucao_automacao
+//   CREATE INDEX idx_logs_execucao_automacao_fluxo_id ON public.logs_execucao_automacao USING btree (fluxo_id)
+//   CREATE INDEX idx_logs_execucao_automacao_usuario_id ON public.logs_execucao_automacao USING btree (usuario_id)
 // Table: materiais
 //   CREATE INDEX idx_materiais_ativo ON public.materiais USING btree (ativo)
 // Table: oportunidades
