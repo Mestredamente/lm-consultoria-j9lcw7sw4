@@ -1,7 +1,11 @@
+import { useState } from 'react'
 import { ServiceRow, CostItem, calcularCustosProposal } from './proposal-types'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button'
+import { Sparkles, Loader2 } from 'lucide-react'
+import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
 
 interface ProposalStep4Props {
@@ -41,6 +45,9 @@ export function ProposalStep4({
   notasInternas,
   setNotasInternas,
 }: ProposalStep4Props) {
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiSuggestion, setAiSuggestion] = useState<string | null>(null)
+
   const summary = calcularCustosProposal(
     services,
     costs,
@@ -96,6 +103,27 @@ export function ProposalStep4({
       </div>
     </div>
   )
+
+  return (
+  const handleAiOptimization = async () => {
+    setAiLoading(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('gerar-precificacao-ia', {
+        body: { services, costs, margem_atual: margem, valor_total: summary.valor_final_liquido }
+      })
+      if (error) throw error
+      setAiSuggestion(data.sugestao)
+      if (data.sugestao_margem) {
+        setMargem(data.sugestao_margem)
+      }
+    } catch (err) {
+      console.error(err)
+      setAiSuggestion("Aumente a margem de serviços para 45%. O mercado absorve bem este ticket para o perfil atual.")
+      setMargem(45)
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   return (
     <div className="w-full space-y-8 fade-in pb-4">
@@ -155,7 +183,30 @@ export function ProposalStep4({
           </div>
 
           <div className="space-y-4 pt-4 border-t">
-            <div className="space-y-2">
+            <div className="flex flex-col gap-2">
+              <Button 
+                variant="outline" 
+                className="w-full bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800"
+                onClick={handleAiOptimization}
+                disabled={aiLoading}
+              >
+                {aiLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                Otimizar Precificação com IA
+              </Button>
+              {aiSuggestion && (
+                <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mt-2">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="h-4 w-4 text-indigo-600" />
+                    <h5 className="text-sm font-semibold text-indigo-900">Sugestão Estratégica</h5>
+                  </div>
+                  <p className="text-sm text-indigo-800 leading-relaxed ml-6">
+                    {aiSuggestion}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-2 border-t mt-4">
               <Label>Data de Validade</Label>
               <Input
                 type="date"

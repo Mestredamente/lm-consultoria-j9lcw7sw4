@@ -77,6 +77,7 @@ export function IntegrationsSettings() {
     whatsapp: false,
     google_calendar: false,
     outlook: false,
+    slack: false,
   })
   const [configOpen, setConfigOpen] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -127,6 +128,7 @@ export function IntegrationsSettings() {
             (i) => i.provedor === 'google' && i.ativo,
           ),
           outlook: integs.some((i) => i.provedor === 'outlook' && i.ativo),
+          slack: integs.some((i) => i.provedor === 'slack' && i.ativo),
         }))
       }
     } catch (err) {
@@ -144,6 +146,8 @@ export function IntegrationsSettings() {
         handleGoogleAuth()
       } else if (id === 'outlook') {
         handleOutlookAuth()
+      } else if (id === 'slack') {
+        handleSlackAuth()
       } else {
         toast.info(`A integração com ${name} estará disponível em breve.`)
       }
@@ -154,10 +158,37 @@ export function IntegrationsSettings() {
         handleDisconnect('google', 'Google Calendar')
       } else if (id === 'outlook') {
         handleDisconnect('outlook', 'Microsoft Outlook')
+      } else if (id === 'slack') {
+        handleDisconnect('slack', 'Slack')
       } else {
         toast.success(`${name} desconectado.`)
       }
     }
+  }
+
+  const handleSlackAuth = async () => {
+    setLoading(true)
+    setTimeout(async () => {
+      try {
+        await supabase.from('integracao_usuarios').upsert(
+          {
+            usuario_id: user?.id,
+            provedor: 'slack',
+            access_token: 'mock_slack_access_token',
+            refresh_token: 'mock_slack_refresh_token',
+            ativo: true,
+          },
+          { onConflict: 'usuario_id, provedor' },
+        )
+
+        setActiveInts((p) => ({ ...p, slack: true }))
+        toast.success('Slack conectado com sucesso!')
+      } catch (err: any) {
+        toast.error('Erro ao conectar Slack: ' + err.message)
+      } finally {
+        setLoading(false)
+      }
+    }, 1000)
   }
 
   const handleOutlookAuth = async () => {
