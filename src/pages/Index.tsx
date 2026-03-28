@@ -337,7 +337,7 @@ export default function Dashboard() {
     switch (id) {
       case 'kpis':
         return (
-          <Wrapper className="col-span-1 lg:col-span-3">
+          <Wrapper key={id} className="col-span-1 lg:col-span-3">
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               <Card className="border-gray-100 shadow-sm">
                 <CardContent className="p-4">
@@ -448,7 +448,7 @@ export default function Dashboard() {
         )
       case 'evolution':
         return (
-          <Wrapper className="col-span-1 lg:col-span-2">
+          <Wrapper key={id} className="col-span-1 lg:col-span-2">
             <Card className="shadow-sm border-gray-100 h-full">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -514,7 +514,7 @@ export default function Dashboard() {
         )
       case 'status':
         return (
-          <Wrapper className="col-span-1 lg:col-span-1">
+          <Wrapper key={id} className="col-span-1 lg:col-span-1">
             <Card className="shadow-sm border-gray-100 h-full">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
@@ -566,7 +566,7 @@ export default function Dashboard() {
         )
       case 'recent':
         return (
-          <Wrapper className="col-span-1 lg:col-span-2">
+          <Wrapper key={id} className="col-span-1 lg:col-span-2">
             <Card className="shadow-sm border-gray-100 h-full">
               <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-3 pt-4">
                 <CardTitle className="text-base font-semibold">
@@ -634,7 +634,7 @@ export default function Dashboard() {
         )
       case 'services':
         return (
-          <Wrapper className="col-span-1 lg:col-span-1">
+          <Wrapper key={id} className="col-span-1 lg:col-span-1">
             <Card className="shadow-sm border-gray-100 h-full">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
