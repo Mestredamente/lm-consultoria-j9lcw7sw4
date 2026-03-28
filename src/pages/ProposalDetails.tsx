@@ -30,6 +30,7 @@ import {
   TrendingUp,
   Activity,
   MailOpen,
+  MessageCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -51,6 +52,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { SendEmailModal } from '@/components/proposals/SendEmailModal'
+import { SendWhatsAppModal } from '@/components/proposals/SendWhatsAppModal'
 import { ProposalsVersions } from '@/components/proposals/ProposalsVersions'
 import { useAuth } from '@/hooks/use-auth'
 
@@ -67,6 +69,7 @@ export default function ProposalDetails() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isEmailOpen, setIsEmailOpen] = useState(false)
+  const [isWhatsAppOpen, setIsWhatsAppOpen] = useState(false)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
   const [emailsSent, setEmailsSent] = useState<any[]>([])
   const [emailToResend, setEmailToResend] = useState('')
@@ -329,6 +332,14 @@ export default function ProposalDetails() {
             }}
           >
             <Mail className="w-4 h-4 mr-2" /> Enviar por Email
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-green-600 border-green-200 hover:bg-green-50"
+            onClick={() => setIsWhatsAppOpen(true)}
+          >
+            <MessageCircle className="w-4 h-4 mr-2" /> Enviar via WhatsApp
           </Button>
           <Button
             variant="outline"
@@ -739,6 +750,14 @@ export default function ProposalDetails() {
         onOpenChange={setIsEmailOpen}
         proposalId={id!}
         defaultEmail={emailToResend || proposal.contatos?.email}
+        onSuccess={fetchDetails}
+      />
+
+      <SendWhatsAppModal
+        open={isWhatsAppOpen}
+        onOpenChange={setIsWhatsAppOpen}
+        proposalId={id!}
+        defaultPhone={proposal.contatos?.telefone || ''}
         onSuccess={fetchDetails}
       />
 
