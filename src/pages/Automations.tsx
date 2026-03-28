@@ -256,12 +256,24 @@ export default function Automations() {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-gray-500 max-w-xs truncate">
-                            <span
-                              className="font-mono text-xs bg-gray-100 px-2 py-1 rounded"
-                              title={JSON.stringify(log.detalhes)}
-                            >
-                              {JSON.stringify(log.detalhes)}
-                            </span>
+                            {log.status === 'erro' ? (
+                              <span
+                                className="text-red-500 font-medium text-xs bg-red-50 px-2 py-1 rounded"
+                                title={
+                                  log.detalhes?.error ||
+                                  JSON.stringify(log.detalhes)
+                                }
+                              >
+                                {log.detalhes?.error || 'Erro desconhecido'}
+                              </span>
+                            ) : (
+                              <span
+                                className="font-mono text-xs bg-gray-100 px-2 py-1 rounded"
+                                title={JSON.stringify(log.detalhes)}
+                              >
+                                {JSON.stringify(log.detalhes)}
+                              </span>
+                            )}
                           </td>
                         </tr>
                       ))

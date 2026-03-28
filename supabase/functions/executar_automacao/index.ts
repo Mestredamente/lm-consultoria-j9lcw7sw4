@@ -33,6 +33,26 @@ Deno.serve(async (req: Request) => {
       ) {
         matchedGatilho = 'Oportunidade Ganha'
       }
+    } else if (table === 'propostas') {
+      if (
+        type === 'UPDATE' &&
+        record.status === 'Aceita' &&
+        old_record?.status !== 'Aceita'
+      ) {
+        matchedGatilho = 'Proposta Aceita'
+      } else if (
+        type === 'UPDATE' &&
+        record.status === 'Rejeitada' &&
+        old_record?.status !== 'Rejeitada'
+      ) {
+        matchedGatilho = 'Proposta Rejeitada'
+      } else if (
+        type === 'UPDATE' &&
+        record.status_nf === 'Pendente' &&
+        old_record?.status_nf !== 'Pendente'
+      ) {
+        matchedGatilho = 'Proposta Aguardando NF'
+      }
     }
 
     if (!matchedGatilho) {
@@ -83,7 +103,10 @@ Deno.serve(async (req: Request) => {
 
           let destinatario = record.email
 
-          if (table === 'oportunidades' && record.contato_id) {
+          if (
+            (table === 'oportunidades' || table === 'propostas') &&
+            record.contato_id
+          ) {
             const { data: contato } = await supabase
               .from('contatos')
               .select('email')
@@ -163,7 +186,12 @@ Deno.serve(async (req: Request) => {
               table === 'empresas' ? record.id : record.empresa_id || null,
             contato_id:
               table === 'contatos' ? record.id : record.contato_id || null,
-            oportunidade_id: table === 'oportunidades' ? record.id : null,
+            oportunidade_id:
+              table === 'oportunidades'
+                ? record.id
+                : table === 'propostas'
+                  ? record.oportunidade_id
+                  : null,
           })
           executados++
         } else if (fluxo.acao === 'Atualizar Campo') {

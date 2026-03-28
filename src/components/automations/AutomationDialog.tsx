@@ -126,6 +126,13 @@ export function AutomationDialog({
                 <SelectItem value="Oportunidade Ganha">
                   Oportunidade Ganha
                 </SelectItem>
+                <SelectItem value="Proposta Aceita">Proposta Aceita</SelectItem>
+                <SelectItem value="Proposta Rejeitada">
+                  Proposta Rejeitada
+                </SelectItem>
+                <SelectItem value="Proposta Aguardando NF">
+                  Proposta Aguardando NF
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
