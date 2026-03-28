@@ -118,6 +118,8 @@ const App = () => (
                         path="/proposals/:id"
                         element={<ProposalDetails />}
                       />
+                      <Route path="/reports/proposals" element={<Reports />} />
+                      <Route path="/reports/funnel" element={<Reports />} />
                       <Route
                         path="/founders"
                         element={<PlaceholderPage title="Fundadores" />}

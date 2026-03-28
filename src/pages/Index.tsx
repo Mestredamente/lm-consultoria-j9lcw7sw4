@@ -1,4 +1,6 @@
 import { useEffect, useState, useMemo } from 'react'
+import { supabase } from '@/lib/supabase/client'
+import { useAuth } from '@/hooks/use-auth'
 import {
   Card,
   CardContent,
@@ -7,151 +9,190 @@ import {
   CardDescription,
 } from '@/components/ui/card'
 import {
-  FileText,
-  DollarSign,
-  TrendingUp,
-  Clock,
-  ArrowUpRight,
-  ArrowDownRight,
-  Filter,
-} from 'lucide-react'
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart'
-import {
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  ResponsiveContainer,
-  Legend,
-} from 'recharts'
-import { supabase } from '@/lib/supabase/client'
-import { useAuth } from '@/hooks/use-auth'
-import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { subDays, format, parseISO } from 'date-fns'
-
-const COLORS = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#6366f1',
-  '#14b8a6',
-]
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import {
+  FileText,
+  TrendingUp,
+  CheckCircle,
+  Clock,
+  Filter,
+  PieChart as PieChartIcon,
+  BarChart3,
+  Activity,
+  AlertCircle,
+} from 'lucide-react'
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  Legend,
+} from 'recharts'
+import { format, subDays, parseISO, isBefore } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { Badge } from '@/components/ui/badge'
+import { useNavigate } from 'react-router-dom'
+import { ChartContainer } from '@/components/ui/chart'
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
+
   const [propostas, setPropostas] = useState<any[]>([])
-  const [itens, setItens] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [periodFilter, setPeriodFilter] = useState('30d')
+
+  const [periodo, setPeriodo] = useState('90d')
+  const [usuarioId, setUsuarioId] = useState('todos')
+  const [empresaId, setEmpresaId] = useState('todas')
+
+  const [usuarios, setUsuarios] = useState<any[]>([])
+  const [empresas, setEmpresas] = useState<any[]>([])
 
   useEffect(() => {
-    if (user) fetchDashboardData()
-  }, [user, periodFilter])
+    supabase
+      .from('usuarios')
+      .select('id, nome')
+      .then(({ data }) => setUsuarios(data || []))
+    supabase
+      .from('empresas')
+      .select('id, nome')
+      .then(({ data }) => setEmpresas(data || []))
+  }, [])
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true)
-      let query = supabase
-        .from('propostas')
-        .select('*, empresas(nome)')
-        .order('data_emissao', { ascending: true })
+  useEffect(() => {
+    if (user) fetchData()
+  }, [user, periodo, usuarioId, empresaId])
 
-      const now = new Date()
-      if (periodFilter === '7d')
-        query = query.gte('data_emissao', subDays(now, 7).toISOString())
-      else if (periodFilter === '30d')
-        query = query.gte('data_emissao', subDays(now, 30).toISOString())
-      else if (periodFilter === '90d')
-        query = query.gte('data_emissao', subDays(now, 90).toISOString())
+  const fetchData = async () => {
+    setLoading(true)
+    let query = supabase
+      .from('propostas')
+      .select(
+        '*, empresas(nome), contatos(nome), itens_proposta(tipo_servico, subtotal)',
+      )
+      .order('created_at', { ascending: false })
 
-      const { data: propData, error: propErr } = await query
-      if (propErr) throw propErr
+    if (periodo === '30d')
+      query = query.gte('created_at', subDays(new Date(), 30).toISOString())
+    if (periodo === '90d')
+      query = query.gte('created_at', subDays(new Date(), 90).toISOString())
+    if (periodo === 'ano')
+      query = query.gte('created_at', subDays(new Date(), 365).toISOString())
 
-      const ids = propData?.map((p) => p.id) || []
-      let itensData: any[] = []
-      if (ids.length > 0) {
-        const { data: iData } = await supabase
-          .from('itens_proposta')
-          .select('tipo_servico, valor_unitario, quantidade, subtotal')
-          .in('proposta_id', ids)
-        itensData = iData || []
-      }
+    if (usuarioId !== 'todos') query = query.eq('responsavel_id', usuarioId)
+    if (empresaId !== 'todas') query = query.eq('empresa_id', empresaId)
 
-      setPropostas(propData || [])
-      setItens(itensData)
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoading(false)
+    const { data, error } = await query
+    if (!error) {
+      setPropostas(data || [])
     }
+    setLoading(false)
   }
 
-  const stats = useMemo(() => {
+  // KPIs
+  const kpis = useMemo(() => {
     const total = propostas.length
     const valorTotal = propostas.reduce(
-      (acc, p) => acc + (p.valor_total || 0),
+      (sum, p) => sum + (p.valor_total || 0),
       0,
     )
-    const aceitas = propostas.filter((p) => p.status === 'Aceita').length
+    const aceitas = propostas.filter((p) => p.status === 'Aceita')
+    const taxaAceitacao = total ? (aceitas.length / total) * 100 : 0
+    const valorMedio = total ? valorTotal / total : 0
     const pendentes = propostas.filter((p) =>
-      ['Rascunho', 'Enviada', 'Visualizada'].includes(p.status),
+      ['Enviada', 'Visualizada'].includes(p.status),
     ).length
-    const tx = total > 0 ? (aceitas / total) * 100 : 0
-    const vmed = total > 0 ? valorTotal / total : 0
-    return { total, valorTotal, taxaAceitacao: tx, valorMedio: vmed, pendentes }
+    const vencidas = propostas.filter(
+      (p) =>
+        p.data_validade &&
+        isBefore(parseISO(p.data_validade), new Date()) &&
+        !['Aceita', 'Rejeitada'].includes(p.status),
+    ).length
+
+    return {
+      total,
+      valorTotal,
+      taxaAceitacao,
+      valorMedio,
+      pendentes,
+      vencidas,
+    }
   }, [propostas])
 
-  const evolucaoData = useMemo(() => {
-    const map = new Map()
-    propostas.forEach((p) => {
-      if (!p.data_emissao) return
-      const date = format(parseISO(p.data_emissao), 'dd/MM')
-      map.set(date, (map.get(date) || 0) + 1)
-    })
-    return Array.from(map.entries()).map(([date, count]) => ({
-      date,
-      propostas: count,
-    }))
+  // Charts data
+  const evolutionData = useMemo(() => {
+    const grouped = propostas.reduce(
+      (acc, p) => {
+        const date = format(parseISO(p.created_at), 'dd/MM', { locale: ptBR })
+        if (!acc[date]) acc[date] = { date, propostas: 0 }
+        acc[date].propostas += 1
+        return acc
+      },
+      {} as Record<string, any>,
+    )
+    return Object.values(grouped).reverse()
   }, [propostas])
+
+  const STATUS_COLORS: Record<string, string> = {
+    Rascunho: '#94a3b8',
+    Enviada: '#3b82f6',
+    Visualizada: '#a855f7',
+    Aceita: '#22c55e',
+    Rejeitada: '#ef4444',
+  }
 
   const statusData = useMemo(() => {
-    const counts = propostas.reduce((acc, p) => {
-      acc[p.status] = (acc[p.status] || 0) + 1
-      return acc
-    }, {} as any)
-    return Object.entries(counts).map(([name, value]) => ({ name, value }))
+    const counts = {
+      Rascunho: 0,
+      Enviada: 0,
+      Visualizada: 0,
+      Aceita: 0,
+      Rejeitada: 0,
+    }
+    propostas.forEach((p) => {
+      if (counts[p.status as keyof typeof counts] !== undefined) {
+        counts[p.status as keyof typeof counts]++
+      }
+    })
+    return Object.entries(counts)
+      .map(([name, value]) => ({ name, value }))
+      .filter((d) => d.value > 0)
   }, [propostas])
 
-  const servicesData = useMemo(() => {
-    const map = new Map()
-    itens.forEach((i) => {
-      const type = i.tipo_servico || 'Outros'
-      const val = i.subtotal || i.quantidade * i.valor_unitario
-      map.set(type, (map.get(type) || 0) + val)
+  const serviceData = useMemo(() => {
+    const services: Record<string, number> = {}
+    propostas.forEach((p) => {
+      p.itens_proposta?.forEach((i: any) => {
+        const t = i.tipo_servico || 'Outros'
+        if (!services[t]) services[t] = 0
+        services[t] += i.subtotal || 0
+      })
     })
-    return Array.from(map.entries())
+    return Object.entries(services)
       .map(([name, valor]) => ({ name, valor }))
       .sort((a, b) => b.valor - a.valor)
-      .slice(0, 5)
-  }, [itens])
+  }, [propostas])
 
   const fmt = (v: number) =>
     new Intl.NumberFormat('pt-BR', {
@@ -159,320 +200,467 @@ export default function Dashboard() {
       currency: 'BRL',
     }).format(v)
 
-  if (loading) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-screen">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    )
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Rascunho':
+        return (
+          <Badge
+            variant="secondary"
+            className="bg-gray-100 text-gray-800 hover:bg-gray-200"
+          >
+            Rascunho
+          </Badge>
+        )
+      case 'Enviada':
+        return (
+          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+            Enviada
+          </Badge>
+        )
+      case 'Visualizada':
+        return (
+          <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200">
+            Visualizada
+          </Badge>
+        )
+      case 'Aceita':
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+            Aceita
+          </Badge>
+        )
+      case 'Rejeitada':
+        return (
+          <Badge
+            variant="destructive"
+            className="bg-red-100 text-red-800 hover:bg-red-200"
+          >
+            Rejeitada
+          </Badge>
+        )
+      default:
+        return <Badge variant="outline">{status}</Badge>
+    }
   }
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 fade-in">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+            <Activity className="h-8 w-8 text-primary" />
             Dashboard Executivo
           </h1>
-          <p className="text-gray-500 mt-1">
-            Acompanhe os resultados e performance das suas propostas.
+          <p className="text-muted-foreground mt-1 text-sm">
+            Visão consolidada do fluxo comercial e performance de propostas.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Select value={periodFilter} onValueChange={setPeriodFilter}>
-            <SelectTrigger className="w-[180px] bg-white">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-gray-500" />
+
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
+          <Select value={periodo} onValueChange={setPeriodo}>
+            <SelectTrigger className="w-[140px] bg-transparent border-none focus:ring-0 shadow-none">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Clock className="w-4 h-4 text-gray-400" />
                 <SelectValue placeholder="Período" />
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Todos">Todo o período</SelectItem>
-              <SelectItem value="7d">Últimos 7 dias</SelectItem>
               <SelectItem value="30d">Últimos 30 dias</SelectItem>
               <SelectItem value="90d">Últimos 90 dias</SelectItem>
+              <SelectItem value="ano">Último ano</SelectItem>
+              <SelectItem value="todos">Todo o período</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="w-px h-6 bg-gray-200" />
+          <Select value={usuarioId} onValueChange={setUsuarioId}>
+            <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 shadow-none">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Filter className="w-4 h-4 text-gray-400" />
+                <SelectValue placeholder="Responsável" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os Responsáveis</SelectItem>
+              {usuarios.map((u) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.nome || 'Sem Nome'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="w-px h-6 bg-gray-200" />
+          <Select value={empresaId} onValueChange={setEmpresaId}>
+            <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 shadow-none">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Filter className="w-4 h-4 text-gray-400" />
+                <SelectValue placeholder="Empresa" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as Empresas</SelectItem>
+              {empresas.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.nome}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Valor em Propostas
-                </p>
-                <h3 className="text-2xl font-bold text-gray-900 mt-2">
-                  {fmt(stats.valorTotal)}
-                </h3>
-              </div>
-              <div className="p-3 bg-blue-50 rounded-lg text-blue-600">
-                <DollarSign className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm">
-              <span className="text-gray-500">
-                Valor médio:{' '}
-                <span className="font-semibold text-gray-700">
-                  {fmt(stats.valorMedio)}
-                </span>
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+      {loading ? (
+        <div className="flex items-center justify-center p-12">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <Card className="border-gray-100 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Propostas
+                    </p>
+                    <h3 className="text-2xl font-bold text-gray-900 mt-1">
+                      {kpis.total}
+                    </h3>
+                  </div>
+                  <div className="bg-gray-50 p-2 rounded-lg">
+                    <FileText className="w-4 h-4 text-gray-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Taxa de Aceitação
-                </p>
-                <h3 className="text-2xl font-bold text-gray-900 mt-2">
-                  {stats.taxaAceitacao.toFixed(1)}%
-                </h3>
-              </div>
-              <div className="p-3 bg-green-50 rounded-lg text-green-600">
-                <TrendingUp className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm">
-              {stats.taxaAceitacao >= 30 ? (
-                <>
-                  <ArrowUpRight className="w-4 h-4 text-green-500 mr-1" />
-                  <span className="text-green-600 font-medium">Saudável</span>
-                </>
-              ) : (
-                <>
-                  <ArrowDownRight className="w-4 h-4 text-red-500 mr-1" />
-                  <span className="text-red-600 font-medium">Atenção</span>
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="border-gray-100 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Valor Pipeline
+                    </p>
+                    <h3 className="text-xl font-bold text-blue-600 mt-1">
+                      {fmt(kpis.valorTotal)}
+                    </h3>
+                  </div>
+                  <div className="bg-blue-50 p-2 rounded-lg">
+                    <TrendingUp className="w-4 h-4 text-blue-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Propostas Emitidas
-                </p>
-                <h3 className="text-2xl font-bold text-gray-900 mt-2">
-                  {stats.total}
-                </h3>
-              </div>
-              <div className="p-3 bg-purple-50 rounded-lg text-purple-600">
-                <FileText className="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            <Card className="border-gray-100 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Conversão
+                    </p>
+                    <h3 className="text-2xl font-bold text-green-600 mt-1">
+                      {kpis.taxaAceitacao.toFixed(1)}%
+                    </h3>
+                  </div>
+                  <div className="bg-green-50 p-2 rounded-lg">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-6">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Pendentes de Ação
-                </p>
-                <h3 className="text-2xl font-bold text-gray-900 mt-2">
-                  {stats.pendentes}
-                </h3>
-              </div>
-              <div className="p-3 bg-orange-50 rounded-lg text-orange-600">
-                <Clock className="w-5 h-5" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Card className="border-gray-100 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ticket Médio
+                    </p>
+                    <h3 className="text-xl font-bold text-gray-900 mt-1">
+                      {fmt(kpis.valorMedio)}
+                    </h3>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-800">
-              Evolução de Propostas Emitidas
-            </CardTitle>
-            <CardDescription>
-              Volume de propostas ao longo do período selecionado
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {evolucaoData.length > 0 ? (
-              <ChartContainer
-                config={{ propostas: { label: 'Propostas', color: '#3b82f6' } }}
-                className="w-full h-full"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
-                    data={evolucaoData}
-                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-                  >
-                    <defs>
-                      <linearGradient
-                        id="colorProp"
-                        x1="0"
-                        y1="0"
-                        x2="0"
-                        y2="1"
+            <Card className="border-gray-100 shadow-sm">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Pendentes
+                    </p>
+                    <h3 className="text-2xl font-bold text-amber-600 mt-1">
+                      {kpis.pendentes}
+                    </h3>
+                  </div>
+                  <div className="bg-amber-50 p-2 rounded-lg">
+                    <Clock className="w-4 h-4 text-amber-500" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-red-100 shadow-sm bg-red-50/30">
+              <CardContent className="p-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className="text-xs font-medium text-red-600 uppercase tracking-wider">
+                      Vencidas
+                    </p>
+                    <h3 className="text-2xl font-bold text-red-700 mt-1">
+                      {kpis.vencidas}
+                    </h3>
+                  </div>
+                  <div className="bg-red-100 p-2 rounded-lg">
+                    <AlertCircle className="w-4 h-4 text-red-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="col-span-1 lg:col-span-2 shadow-sm border-gray-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-gray-500" />
+                  Evolução de Criação de Propostas
+                </CardTitle>
+                <CardDescription>
+                  Volume de propostas geradas ao longo do período
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                {evolutionData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-gray-400">
+                    Sem dados
+                  </div>
+                ) : (
+                  <ChartContainer config={{}} className="h-full w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart
+                        data={evolutionData}
+                        margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                       >
-                        <stop
-                          offset="5%"
-                          stopColor="#3b82f6"
-                          stopOpacity={0.3}
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          vertical={false}
+                          stroke="#f1f5f9"
                         />
-                        <stop
-                          offset="95%"
-                          stopColor="#3b82f6"
-                          stopOpacity={0}
+                        <XAxis
+                          dataKey="date"
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                          dy={10}
                         />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      vertical={false}
-                      stroke="#f3f4f6"
-                    />
-                    <XAxis
-                      dataKey="date"
-                      axisLine={false}
-                      tickLine={false}
-                      fontSize={12}
-                      dy={10}
-                    />
-                    <YAxis
-                      axisLine={false}
-                      tickLine={false}
-                      fontSize={12}
-                      dx={-10}
-                      allowDecimals={false}
-                    />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      type="monotone"
-                      dataKey="propostas"
-                      stroke="#3b82f6"
-                      strokeWidth={3}
-                      fillOpacity={1}
-                      fill="url(#colorProp)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-400">
-                Dados insuficientes para exibir o gráfico.
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                        <YAxis
+                          tickLine={false}
+                          axisLine={false}
+                          tick={{ fontSize: 12, fill: '#64748b' }}
+                        />
+                        <RechartsTooltip
+                          contentStyle={{
+                            borderRadius: '8px',
+                            border: '1px solid #e2e8f0',
+                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                          }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="propostas"
+                          name="Qtd. Propostas"
+                          stroke="#0f172a"
+                          strokeWidth={3}
+                          dot={{ r: 4, fill: '#fff', strokeWidth: 2 }}
+                          activeDot={{ r: 6, fill: '#0f172a' }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                )}
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-800">
-              Distribuição por Status
-            </CardTitle>
-            <CardDescription>Visão geral do funil de vendas</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {statusData.length > 0 ? (
-              <ChartContainer config={{}} className="w-full h-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={statusData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {statusData.map((entry, index) => (
-                        <Cell
-                          key={`cell-${index}`}
-                          fill={COLORS[index % COLORS.length]}
+            <Card className="shadow-sm border-gray-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <PieChartIcon className="w-4 h-4 text-gray-500" />
+                  Distribuição por Status
+                </CardTitle>
+                <CardDescription>Pipeline atual das propostas</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                {statusData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-gray-400">
+                    Sem dados
+                  </div>
+                ) : (
+                  <ChartContainer config={{}} className="h-full w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={statusData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={90}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {statusData.map((entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={STATUS_COLORS[entry.name] || '#cbd5e1'}
+                            />
+                          ))}
+                        </Pie>
+                        <RechartsTooltip
+                          formatter={(value: number) => [
+                            `${value} propostas`,
+                            'Volume',
+                          ]}
+                          contentStyle={{ borderRadius: '8px', border: 'none' }}
                         />
-                      ))}
-                    </Pie>
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Legend
-                      verticalAlign="bottom"
-                      height={36}
-                      iconType="circle"
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-400">
-                Dados insuficientes para exibir o gráfico.
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                        <Legend verticalAlign="bottom" height={36} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-800">
-              Receita por Serviço
-            </CardTitle>
-            <CardDescription>
-              Top 5 serviços com maior volume financeiro em propostas
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[300px]">
-            {servicesData.length > 0 ? (
-              <ChartContainer
-                config={{ valor: { label: 'Valor (R$)', color: '#8b5cf6' } }}
-                className="w-full h-full"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={servicesData}
-                    layout="vertical"
-                    margin={{ top: 0, right: 30, left: 40, bottom: 0 }}
-                  >
-                    <CartesianGrid
-                      strokeDasharray="3 3"
-                      horizontal={false}
-                      stroke="#f3f4f6"
-                    />
-                    <XAxis type="number" hide />
-                    <YAxis
-                      dataKey="name"
-                      type="category"
-                      axisLine={false}
-                      tickLine={false}
-                      fontSize={11}
-                      width={80}
-                    />
-                    <ChartTooltip
-                      content={<ChartTooltipContent valueFormatter={fmt} />}
-                    />
-                    <Bar
-                      dataKey="valor"
-                      fill="#8b5cf6"
-                      radius={[0, 4, 4, 0]}
-                      barSize={24}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-400">
-                Dados insuficientes para exibir o gráfico.
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <Card className="col-span-1 lg:col-span-2 shadow-sm border-gray-100">
+              <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-3 pt-4">
+                <CardTitle className="text-base font-semibold">
+                  Últimas 10 Propostas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-0">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead>Número</TableHead>
+                      <TableHead>Empresa</TableHead>
+                      <TableHead>Emissão</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {propostas.length === 0 ? (
+                      <TableRow>
+                        <TableCell
+                          colSpan={5}
+                          className="text-center py-6 text-gray-500"
+                        >
+                          Nenhuma proposta recente.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      propostas.slice(0, 10).map((p) => (
+                        <TableRow
+                          key={p.id}
+                          className="cursor-pointer hover:bg-gray-50/80 transition-colors"
+                          onClick={() => navigate(`/proposals/${p.id}`)}
+                        >
+                          <TableCell className="font-medium text-gray-900">
+                            {p.numero_proposta || 'S/N'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium text-gray-800">
+                              {p.empresas?.nome || '-'}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {p.contatos?.nome || '-'}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-gray-500 text-sm">
+                            {p.data_emissao
+                              ? new Date(p.data_emissao).toLocaleDateString(
+                                  'pt-BR',
+                                )
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-medium text-gray-900">
+                            {fmt(p.valor_total)}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(p.status)}</TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm border-gray-100">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-gray-500" />
+                  Volume por Tipo de Serviço
+                </CardTitle>
+                <CardDescription>Faturamento por categoria</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                {serviceData.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-gray-400">
+                    Sem dados
+                  </div>
+                ) : (
+                  <ChartContainer config={{}} className="h-full w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        data={serviceData}
+                        layout="vertical"
+                        margin={{ top: 0, right: 20, left: 20, bottom: 0 }}
+                      >
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          horizontal={true}
+                          vertical={false}
+                          stroke="#f1f5f9"
+                        />
+                        <XAxis type="number" hide />
+                        <YAxis
+                          dataKey="name"
+                          type="category"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{
+                            fill: '#475569',
+                            fontSize: 12,
+                            fontWeight: 500,
+                          }}
+                          width={100}
+                        />
+                        <RechartsTooltip
+                          cursor={{ fill: '#f8fafc' }}
+                          contentStyle={{
+                            borderRadius: '8px',
+                            border: 'none',
+                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                          }}
+                          formatter={(val: number) => [fmt(val), 'Faturamento']}
+                        />
+                        <Bar dataKey="valor" radius={[0, 4, 4, 0]} barSize={24}>
+                          {serviceData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill="#0f172a" />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </ChartContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </>
+      )}
     </div>
   )
 }

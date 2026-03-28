@@ -1850,6 +1850,44 @@ export type Database = {
           },
         ]
       }
+      propostas_versoes: {
+        Row: {
+          created_at: string
+          dados: Json
+          id: string
+          proposta_id: string
+          resumo_mudancas: string | null
+          usuario_id: string | null
+          versao: number
+        }
+        Insert: {
+          created_at?: string
+          dados: Json
+          id?: string
+          proposta_id: string
+          resumo_mudancas?: string | null
+          usuario_id?: string | null
+          versao: number
+        }
+        Update: {
+          created_at?: string
+          dados?: Json
+          id?: string
+          proposta_id?: string
+          resumo_mudancas?: string | null
+          usuario_id?: string | null
+          versao?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'propostas_versoes_proposta_id_fkey'
+            columns: ['proposta_id']
+            isOneToOne: false
+            referencedRelation: 'propostas'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       rotas_aereas: {
         Row: {
           ativo: boolean | null
@@ -2324,6 +2362,10 @@ export type Database = {
         Returns: boolean
       }
       request_medical_record: { Args: { p_hash: string }; Returns: boolean }
+      snapshot_proposta: {
+        Args: { p_proposta_id: string; p_resumo: string; p_usuario_id: string }
+        Returns: string
+      }
       submit_patient_test: {
         Args: { p_hash: string; p_respostas: Json; p_teste_id: string }
         Returns: boolean
@@ -2859,6 +2901,14 @@ export const Constants = {
 //   updated_at: timestamp with time zone (not null, default: now())
 //   notas_internas: text (nullable)
 //   condicoes_pagamento: text (nullable)
+// Table: propostas_versoes
+//   id: uuid (not null, default: gen_random_uuid())
+//   proposta_id: uuid (not null)
+//   versao: integer (not null)
+//   dados: jsonb (not null)
+//   resumo_mudancas: text (nullable)
+//   usuario_id: uuid (nullable)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: rotas_aereas
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -3124,6 +3174,10 @@ export const Constants = {
 //   PRIMARY KEY propostas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY propostas_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id) ON DELETE CASCADE
 //   CHECK propostas_status_check: CHECK ((status = ANY (ARRAY['Rascunho'::text, 'Enviada'::text, 'Visualizada'::text, 'Aceita'::text, 'Rejeitada'::text])))
+// Table: propostas_versoes
+//   PRIMARY KEY propostas_versoes_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY propostas_versoes_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
+//   FOREIGN KEY propostas_versoes_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id) ON DELETE SET NULL
 // Table: rotas_aereas
 //   PRIMARY KEY rotas_aereas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY rotas_aereas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
@@ -3357,6 +3411,10 @@ export const Constants = {
 //     WITH CHECK: (responsavel_id = auth.uid())
 //   Policy "propostas_team_policy" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: ((responsavel_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
+// Table: propostas_versoes
+//   Policy "propostas_versoes_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: true
+//     WITH CHECK: true
 // Table: rotas_aereas
 //   Policy "rotas_aereas_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
@@ -4100,6 +4158,45 @@ export const Constants = {
 //   BEGIN
 //     NEW.updated_at = NOW();
 //     RETURN NEW;
+//   END;
+//   $function$
+//
+// FUNCTION snapshot_proposta(uuid, uuid, text)
+//   CREATE OR REPLACE FUNCTION public.snapshot_proposta(p_proposta_id uuid, p_usuario_id uuid, p_resumo text)
+//    RETURNS uuid
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//     v_versao int;
+//     v_dados jsonb;
+//     v_version_id uuid;
+//   BEGIN
+//     -- Determine next version number
+//     SELECT COALESCE(MAX(versao), 0) + 1 INTO v_versao
+//     FROM public.propostas_versoes
+//     WHERE proposta_id = p_proposta_id;
+//
+//     -- Build JSON snapshot of proposal, items, and costs
+//     SELECT jsonb_build_object(
+//       'proposta', row_to_json(p),
+//       'itens', (SELECT COALESCE(jsonb_agg(row_to_json(i)), '[]'::jsonb) FROM public.itens_proposta i WHERE i.proposta_id = p_proposta_id),
+//       'custos', (SELECT COALESCE(jsonb_agg(row_to_json(c)), '[]'::jsonb) FROM public.custos_operacionais c WHERE c.proposta_id = p_proposta_id)
+//     ) INTO v_dados
+//     FROM public.propostas p
+//     WHERE p.id = p_proposta_id;
+//
+//     -- Only snapshot if proposal exists
+//     IF v_dados->>'proposta' IS NULL THEN
+//       RETURN NULL;
+//     END IF;
+//
+//     -- Insert the version
+//     INSERT INTO public.propostas_versoes (proposta_id, versao, dados, resumo_mudancas, usuario_id)
+//     VALUES (p_proposta_id, v_versao, v_dados, p_resumo, p_usuario_id)
+//     RETURNING id INTO v_version_id;
+//
+//     RETURN v_version_id;
 //   END;
 //   $function$
 //

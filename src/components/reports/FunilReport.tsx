@@ -17,6 +17,7 @@ import {
   CartesianGrid,
   Cell,
 } from 'recharts'
+import { ChartContainer } from '@/components/ui/chart'
 import {
   Table,
   TableBody,
@@ -25,21 +26,69 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Eye, Send, FileText, CheckCircle, XCircle } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Eye,
+  Send,
+  FileText,
+  CheckCircle,
+  XCircle,
+  Filter,
+  TrendingUp,
+  Clock,
+  Lightbulb,
+} from 'lucide-react'
+import { subDays, differenceInDays, parseISO } from 'date-fns'
 
 export function FunilReport() {
   const [data, setData] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [periodo, setPeriodo] = useState('90d')
+  const [usuarioId, setUsuarioId] = useState('todos')
+  const [empresaId, setEmpresaId] = useState('todas')
+
+  const [usuarios, setUsuarios] = useState<any[]>([])
+  const [empresas, setEmpresas] = useState<any[]>([])
+
+  useEffect(() => {
+    supabase
+      .from('usuarios')
+      .select('id, nome')
+      .then(({ data }) => setUsuarios(data || []))
+    supabase
+      .from('empresas')
+      .select('id, nome')
+      .then(({ data }) => setEmpresas(data || []))
+  }, [])
 
   useEffect(() => {
     fetchData()
-  }, [])
+  }, [periodo, usuarioId, empresaId])
 
   const fetchData = async () => {
     setLoading(true)
-    const { data: props } = await supabase
-      .from('propostas')
-      .select('status, valor_total')
+    let query = supabase.from('propostas').select(`
+        id, status, valor_total, created_at, responsavel_id, empresa_id,
+        historico_propostas(acao, data_acao)
+      `)
+
+    if (periodo === '30d')
+      query = query.gte('created_at', subDays(new Date(), 30).toISOString())
+    if (periodo === '90d')
+      query = query.gte('created_at', subDays(new Date(), 90).toISOString())
+    if (periodo === 'ano')
+      query = query.gte('created_at', subDays(new Date(), 365).toISOString())
+
+    if (usuarioId !== 'todos') query = query.eq('responsavel_id', usuarioId)
+    if (empresaId !== 'todas') query = query.eq('empresa_id', empresaId)
+
+    const { data: props } = await query
     setData(props || [])
     setLoading(false)
   }
@@ -60,18 +109,63 @@ export function FunilReport() {
       Rejeitada: 0,
     }
 
+    let totalEnviadasParaCalculo = 0
+    let totalVisualizadasParaCalculo = 0
+    let totalAceitas = 0
+    let sumDaysToAccept = 0
+    let acceptedCount = 0
+
     data.forEach((p) => {
       const s = p.status as keyof typeof counts
       if (counts[s] !== undefined) {
         counts[s]++
         values[s] += p.valor_total || 0
       }
+
+      // Tracking for insights
+      const hasBeenSent = [
+        'Enviada',
+        'Visualizada',
+        'Aceita',
+        'Rejeitada',
+      ].includes(p.status)
+      const hasBeenViewed = ['Visualizada', 'Aceita', 'Rejeitada'].includes(
+        p.status,
+      )
+
+      if (hasBeenSent) totalEnviadasParaCalculo++
+      if (hasBeenViewed) totalVisualizadasParaCalculo++
+
+      if (p.status === 'Aceita') {
+        totalAceitas++
+        const created =
+          p.historico_propostas?.find((h: any) => h.acao === 'Criada')
+            ?.data_acao || p.created_at
+        const accepted = p.historico_propostas?.find(
+          (h: any) => h.acao === 'Aceita',
+        )?.data_acao
+        if (created && accepted) {
+          sumDaysToAccept += differenceInDays(
+            parseISO(accepted),
+            parseISO(created),
+          )
+          acceptedCount++
+        }
+      }
     })
 
     const total = data.length
-    // In a classic sales funnel, stages include the ones below it.
-    // For specific status tracking, we show exactly where they are currently.
-    // To show a true funnel (reduction), we calculate cumulative.
+
+    const viewRate =
+      totalEnviadasParaCalculo > 0
+        ? (totalVisualizadasParaCalculo / totalEnviadasParaCalculo) * 100
+        : 0
+    const acceptRate =
+      totalEnviadasParaCalculo > 0
+        ? (totalAceitas / totalEnviadasParaCalculo) * 100
+        : 0
+    const avgDaysToAccept =
+      acceptedCount > 0 ? sumDaysToAccept / acceptedCount : 0
 
     const funnelSteps = [
       {
@@ -83,11 +177,7 @@ export function FunilReport() {
       },
       {
         name: 'Enviadas',
-        count:
-          counts.Enviada +
-          counts.Visualizada +
-          counts.Aceita +
-          counts.Rejeitada,
+        count: totalEnviadasParaCalculo,
         value:
           values.Enviada +
           values.Visualizada +
@@ -98,14 +188,14 @@ export function FunilReport() {
       },
       {
         name: 'Visualizadas',
-        count: counts.Visualizada + counts.Aceita + counts.Rejeitada,
+        count: totalVisualizadasParaCalculo,
         value: values.Visualizada + values.Aceita + values.Rejeitada,
         color: '#a855f7',
         icon: Eye,
       },
       {
         name: 'Aceitas',
-        count: counts.Aceita,
+        count: totalAceitas,
         value: values.Aceita,
         color: '#22c55e',
         icon: CheckCircle,
@@ -147,6 +237,13 @@ export function FunilReport() {
         },
       ],
       total,
+      insights: {
+        viewRate,
+        acceptRate,
+        avgDaysToAccept,
+        rejeitadas: counts.Rejeitada,
+        valorRejeitado: values.Rejeitada,
+      },
     }
   }, [data])
 
@@ -157,71 +254,103 @@ export function FunilReport() {
     }).format(v)
   const pct = (v: number) => `${(v * 100).toFixed(1)}%`
 
-  if (loading)
-    return (
-      <div className="p-8 text-center text-gray-500">
-        Carregando dados do funil...
-      </div>
-    )
-
   return (
     <div className="space-y-6 animate-fade-in-up">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+        <div className="flex flex-wrap items-center gap-3 w-full">
+          <div className="bg-gray-100 p-2 rounded-lg shrink-0">
+            <Filter className="w-4 h-4 text-gray-600" />
+          </div>
+          <Select value={periodo} onValueChange={setPeriodo}>
+            <SelectTrigger className="w-[140px] bg-white">
+              <SelectValue placeholder="Período" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="30d">Últimos 30 dias</SelectItem>
+              <SelectItem value="90d">Últimos 90 dias</SelectItem>
+              <SelectItem value="ano">Último ano</SelectItem>
+              <SelectItem value="todos">Todo o período</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={usuarioId} onValueChange={setUsuarioId}>
+            <SelectTrigger className="w-[160px] bg-white">
+              <SelectValue placeholder="Responsável" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os Responsáveis</SelectItem>
+              {usuarios.map((u) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.nome || 'Sem Nome'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={empresaId} onValueChange={setEmpresaId}>
+            <SelectTrigger className="w-[160px] bg-white">
+              <SelectValue placeholder="Empresa" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as Empresas</SelectItem>
+              {empresas.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="bg-gradient-to-br from-blue-50 to-white border-blue-100 shadow-sm">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-blue-800">
-              Taxa de Envio
+              Taxa de Visualização
             </CardTitle>
-            <Send className="w-4 h-4 text-blue-500" />
+            <Eye className="w-4 h-4 text-blue-500" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-blue-700">
-              {funnelData.total > 0
-                ? pct(funnelData.funnelSteps[1].count / funnelData.total)
-                : '0%'}
+              {funnelData.insights.viewRate.toFixed(1)}%
             </div>
-            <p className="text-xs text-blue-600 mt-1">do total criado</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-br from-purple-50 to-white border-purple-100 shadow-sm">
-          <CardHeader className="pb-2 flex flex-row items-center justify-between">
-            <CardTitle className="text-sm font-medium text-purple-800">
-              Taxa de Visualização
-            </CardTitle>
-            <Eye className="w-4 h-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-purple-700">
-              {funnelData.funnelSteps[1].count > 0
-                ? pct(
-                    funnelData.funnelSteps[2].count /
-                      funnelData.funnelSteps[1].count,
-                  )
-                : '0%'}
-            </div>
-            <p className="text-xs text-purple-600 mt-1">dos emails enviados</p>
+            <p className="text-xs text-blue-600 mt-1">das propostas enviadas</p>
           </CardContent>
         </Card>
 
         <Card className="bg-gradient-to-br from-green-50 to-white border-green-100 shadow-sm">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-medium text-green-800">
-              Taxa de Fechamento
+              Taxa de Aceitação
             </CardTitle>
             <CheckCircle className="w-4 h-4 text-green-500" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-green-700">
-              {funnelData.funnelSteps[2].count > 0
-                ? pct(
-                    funnelData.funnelSteps[3].count /
-                      funnelData.funnelSteps[2].count,
-                  )
-                : '0%'}
+              {funnelData.insights.acceptRate.toFixed(1)}%
             </div>
             <p className="text-xs text-green-600 mt-1">
-              das propostas visualizadas
+              das propostas enviadas
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-br from-amber-50 to-white border-amber-100 shadow-sm">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-medium text-amber-800">
+              Tempo Médio de Fechamento
+            </CardTitle>
+            <Clock className="w-4 h-4 text-amber-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-amber-700">
+              {funnelData.insights.avgDaysToAccept > 0
+                ? `${Math.round(funnelData.insights.avgDaysToAccept)} dias`
+                : '-'}
+            </div>
+            <p className="text-xs text-amber-600 mt-1">
+              da criação até o aceite
             </p>
           </CardContent>
         </Card>
@@ -232,62 +361,70 @@ export function FunilReport() {
           <CardHeader>
             <CardTitle>Funil de Conversão Cumulativo</CardTitle>
             <CardDescription>
-              Sobrevivência das propostas em cada etapa
+              Retenção de propostas em cada estágio comercial
             </CardDescription>
           </CardHeader>
           <CardContent className="h-[350px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={funnelData.funnelSteps}
-                layout="vertical"
-                margin={{ top: 20, right: 50, left: 20, bottom: 5 }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  horizontal={true}
-                  vertical={false}
-                  stroke="#f0f0f0"
-                />
-                <XAxis type="number" hide />
-                <YAxis
-                  dataKey="name"
-                  type="category"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#475569', fontSize: 12, fontWeight: 500 }}
-                  width={110}
-                />
-                <Tooltip
-                  cursor={{ fill: '#f8fafc' }}
-                  contentStyle={{
-                    borderRadius: '8px',
-                    border: 'none',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                  }}
-                  formatter={(val: number, name: string, props: any) => [
-                    `${val} propostas`,
-                    'Volume',
-                  ]}
-                />
-                <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={36}>
-                  {funnelData.funnelSteps.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {loading ? (
+              <div className="w-full h-full flex items-center justify-center text-gray-500">
+                Carregando gráfico...
+              </div>
+            ) : (
+              <ChartContainer config={{}} className="h-full w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={funnelData.funnelSteps}
+                    layout="vertical"
+                    margin={{ top: 20, right: 50, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      horizontal={true}
+                      vertical={false}
+                      stroke="#f0f0f0"
+                    />
+                    <XAxis type="number" hide />
+                    <YAxis
+                      dataKey="name"
+                      type="category"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#475569', fontSize: 12, fontWeight: 500 }}
+                      width={110}
+                    />
+                    <Tooltip
+                      cursor={{ fill: '#f8fafc' }}
+                      contentStyle={{
+                        borderRadius: '8px',
+                        border: 'none',
+                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
+                      }}
+                      formatter={(val: number) => [
+                        `${val} propostas`,
+                        'Volume',
+                      ]}
+                    />
+                    <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={36}>
+                      {funnelData.funnelSteps.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            )}
           </CardContent>
         </Card>
 
         <Card className="shadow-sm border-gray-100">
           <CardHeader>
-            <CardTitle>Status Atual do Pipeline</CardTitle>
+            <CardTitle>Detalhamento de Status e Insights</CardTitle>
             <CardDescription>
-              Onde as propostas estão paradas hoje
+              Onde as propostas se encontram hoje
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-hidden rounded-lg border border-gray-100">
+            <div className="overflow-hidden rounded-lg border border-gray-100 mb-6">
               <Table>
                 <TableHeader className="bg-gray-50">
                   <TableRow>
@@ -324,31 +461,37 @@ export function FunilReport() {
               </Table>
             </div>
 
-            <div className="mt-6 bg-amber-50 border border-amber-100 rounded-lg p-4 flex items-start gap-3">
-              <div className="bg-amber-100 p-1.5 rounded-md mt-0.5">
-                <XCircle className="w-4 h-4 text-amber-600" />
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 flex items-start gap-3">
+              <div className="bg-white p-2 rounded-full shadow-sm border border-gray-100 mt-0.5">
+                <Lightbulb className="w-5 h-5 text-yellow-500" />
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-amber-900">
-                  Análise de Rejeição
+                <h4 className="text-sm font-semibold text-gray-900">
+                  Insights Automáticos
                 </h4>
-                <p className="text-sm text-amber-800 mt-1">
-                  Ocorreram{' '}
-                  <strong>
-                    {funnelData.currentStatus.find(
-                      (s) => s.name === 'Rejeitada',
-                    )?.count || 0}
-                  </strong>{' '}
-                  perdas documentadas, representando{' '}
-                  <strong>
-                    {fmt(
-                      funnelData.currentStatus.find(
-                        (s) => s.name === 'Rejeitada',
-                      )?.value || 0,
-                    )}
-                  </strong>{' '}
-                  a menos no faturamento.
-                </p>
+                <div className="space-y-2 mt-2 text-sm text-gray-600">
+                  <p>
+                    • A taxa geral de visualização das suas propostas enviadas é
+                    de{' '}
+                    <strong>{funnelData.insights.viewRate.toFixed(1)}%</strong>.
+                  </p>
+                  <p>
+                    • A sua taxa de conversão final para negócios ganhos é de{' '}
+                    <strong>
+                      {funnelData.insights.acceptRate.toFixed(1)}%
+                    </strong>
+                    .
+                  </p>
+                  {funnelData.insights.rejeitadas > 0 && (
+                    <p className="text-red-600">
+                      • Ocorreram{' '}
+                      <strong>{funnelData.insights.rejeitadas}</strong> perdas
+                      recentes, representando{' '}
+                      <strong>{fmt(funnelData.insights.valorRejeitado)}</strong>{' '}
+                      a menos no faturamento estimado.
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
