@@ -27,6 +27,9 @@ import {
   CheckCircle,
   XCircle,
   RefreshCw,
+  TrendingUp,
+  Activity,
+  MailOpen,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -174,6 +177,53 @@ export default function ProposalDetails() {
     d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'
   const mc = (m: number) =>
     m > 35 ? 'text-green-600' : m >= 20 ? 'text-yellow-600' : 'text-red-600'
+
+  const trackingStats = useMemo(() => {
+    const views = history.filter((h) => h.acao === 'Visualizada')
+    const emailsCount = emailsSent.length
+    const openRate =
+      emailsCount > 0
+        ? Math.min(100, Math.round((views.length / emailsCount) * 100))
+        : 0
+    const lastView = views.length > 0 ? views[0].data_acao : null
+
+    const sendsAsc = history
+      .filter((h) => h.acao === 'Enviada')
+      .sort(
+        (a, b) =>
+          new Date(a.data_acao).getTime() - new Date(b.data_acao).getTime(),
+      )
+    const viewsAsc = [...views].sort(
+      (a, b) =>
+        new Date(a.data_acao).getTime() - new Date(b.data_acao).getTime(),
+    )
+
+    let avgTime = null
+    if (sendsAsc.length > 0 && viewsAsc.length > 0) {
+      const diffMs =
+        new Date(viewsAsc[0].data_acao).getTime() -
+        new Date(sendsAsc[0].data_acao).getTime()
+      if (diffMs > 0) {
+        const diffMins = Math.round(diffMs / 60000)
+        if (diffMins < 60) avgTime = `${diffMins} min`
+        else if (diffMins < 1440) avgTime = `${Math.round(diffMins / 60)} h`
+        else avgTime = `${Math.round(diffMins / 1440)} dias`
+      }
+    }
+
+    let rateColor = 'text-red-600'
+    if (openRate >= 50) rateColor = 'text-green-600'
+    else if (openRate >= 20) rateColor = 'text-yellow-600'
+
+    return {
+      views: views.length,
+      lastView,
+      emailsCount,
+      openRate,
+      rateColor,
+      avgTime,
+    }
+  }, [history, emailsSent])
 
   const handleDeleteEmail = async (emailId: string) => {
     if (!confirm('Deseja realmente remover o registro deste e-mail?')) return
@@ -341,6 +391,7 @@ export default function ProposalDetails() {
           <TabsTrigger value="versoes">Versões</TabsTrigger>
           <TabsTrigger value="notas">Notas Internas</TabsTrigger>
           <TabsTrigger value="emails">Emails ({emailsSent.length})</TabsTrigger>
+          <TabsTrigger value="rastreamento">Rastreamento</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumo" className="mt-4 space-y-6">
@@ -553,6 +604,125 @@ export default function ProposalDetails() {
                 </TableBody>
               </Table>
             </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="rastreamento" className="mt-4 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 font-medium">
+                    Visualizações
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {trackingStats.views}
+                  </p>
+                </div>
+                <div className="p-3 bg-blue-50 text-blue-600 rounded-full">
+                  <Eye className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 font-medium">
+                    Taxa de Abertura
+                  </p>
+                  <p
+                    className={`text-2xl font-bold ${trackingStats.rateColor}`}
+                  >
+                    {trackingStats.emailsCount > 0
+                      ? `${trackingStats.openRate}%`
+                      : '-'}
+                  </p>
+                </div>
+                <div
+                  className={`p-3 rounded-full ${trackingStats.openRate >= 50 ? 'bg-green-50 text-green-600' : trackingStats.openRate >= 20 ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-600'}`}
+                >
+                  <Activity className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 font-medium">
+                    Tempo Médio (1ª Visita)
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {trackingStats.avgTime || '-'}
+                  </p>
+                </div>
+                <div className="p-3 bg-purple-50 text-purple-600 rounded-full">
+                  <Clock className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 font-medium">
+                    Última Visualização
+                  </p>
+                  <p className="text-lg font-bold text-gray-900 truncate">
+                    {trackingStats.lastView
+                      ? new Date(trackingStats.lastView).toLocaleString('pt-BR')
+                      : 'Aguardando'}
+                  </p>
+                </div>
+                <div className="p-3 bg-gray-50 text-gray-600 rounded-full">
+                  <MailOpen className="w-5 h-5" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                Linha do Tempo
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="relative border-l-2 border-gray-200 ml-4 space-y-8 py-4">
+                {[...history]
+                  .sort(
+                    (a, b) =>
+                      new Date(a.data_acao).getTime() -
+                      new Date(b.data_acao).getTime(),
+                  )
+                  .map((h) => (
+                    <div key={h.id} className="relative pl-8">
+                      <div className="absolute -left-[17px] top-1 bg-white p-1 rounded-full border border-gray-200 shadow-sm">
+                        {getActionIcon(h.acao)}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {h.acao === 'Visualizada'
+                            ? 'Proposta Visualizada pelo Cliente'
+                            : h.acao === 'Enviada'
+                              ? 'Proposta Enviada por Email'
+                              : h.acao === 'Criada'
+                                ? 'Proposta Criada'
+                                : `Proposta ${h.acao}`}
+                        </p>
+                        <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(h.data_acao).toLocaleString('pt-BR')}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                {history.length === 0 && (
+                  <p className="text-gray-500 pl-4">
+                    Nenhum evento registrado na linha do tempo.
+                  </p>
+                )}
+              </div>
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>

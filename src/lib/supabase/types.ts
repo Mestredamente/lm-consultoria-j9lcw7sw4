@@ -677,6 +677,44 @@ export type Database = {
           },
         ]
       }
+      emails_propostas: {
+        Row: {
+          assunto: string
+          data_envio: string
+          email_destinatario: string
+          email_id_resend: string | null
+          id: string
+          proposta_id: string
+          status: string
+        }
+        Insert: {
+          assunto: string
+          data_envio?: string
+          email_destinatario: string
+          email_id_resend?: string | null
+          id?: string
+          proposta_id: string
+          status?: string
+        }
+        Update: {
+          assunto?: string
+          data_envio?: string
+          email_destinatario?: string
+          email_id_resend?: string | null
+          id?: string
+          proposta_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'emails_propostas_proposta_id_fkey'
+            columns: ['proposta_id']
+            isOneToOne: false
+            referencedRelation: 'propostas'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       empresas: {
         Row: {
           cnpj: string | null
@@ -2700,6 +2738,14 @@ export const Constants = {
 //   assunto: text (not null)
 //   corpo: text (not null)
 //   enviado_em: timestamp with time zone (not null, default: now())
+// Table: emails_propostas
+//   id: uuid (not null, default: gen_random_uuid())
+//   proposta_id: uuid (not null)
+//   email_destinatario: text (not null)
+//   assunto: text (not null)
+//   data_envio: timestamp with time zone (not null, default: now())
+//   status: text (not null, default: 'Enviado'::text)
+//   email_id_resend: text (nullable)
 // Table: empresas
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -3127,6 +3173,9 @@ export const Constants = {
 //   FOREIGN KEY emails_automacao_fluxo_id_fkey: FOREIGN KEY (fluxo_id) REFERENCES fluxos_automacao(id) ON DELETE CASCADE
 //   PRIMARY KEY emails_automacao_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY emails_automacao_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: emails_propostas
+//   PRIMARY KEY emails_propostas_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY emails_propostas_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
 // Table: empresas
 //   PRIMARY KEY empresas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY empresas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
@@ -3344,6 +3393,10 @@ export const Constants = {
 //   Policy "emails_automacao_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
+// Table: emails_propostas
+//   Policy "emails_propostas_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = emails_propostas.proposta_id) AND ((p.responsavel_id = auth.uid()) OR ((p.responsavel_id IN ( SELECT usuarios.id            FROM usuarios           WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))))))
+//     WITH CHECK: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = emails_propostas.proposta_id) AND (p.responsavel_id = auth.uid()))))
 // Table: empresas
 //   Policy "empresas_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
@@ -4531,6 +4584,8 @@ export const Constants = {
 // Table: emails_automacao
 //   CREATE INDEX idx_emails_automacao_fluxo_id ON public.emails_automacao USING btree (fluxo_id)
 //   CREATE INDEX idx_emails_automacao_usuario_id ON public.emails_automacao USING btree (usuario_id)
+// Table: emails_propostas
+//   CREATE INDEX idx_emails_propostas_proposta_id ON public.emails_propostas USING btree (proposta_id)
 // Table: financeiro
 //   CREATE UNIQUE INDEX financeiro_usuario_paciente_mes_ano_key ON public.financeiro USING btree (usuario_id, paciente_id, mes, ano)
 // Table: fluxos_automacao

@@ -131,47 +131,117 @@ Deno.serve(async (req: Request) => {
     }
 
     let html = `
-    <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
-      <div style="background-color: #2563eb; color: #fff; padding: 30px 20px; text-align: center;">
-        ${logoHtml}
-        <h1 style="margin: 0; font-size: 24px;">Proposta Comercial</h1>
-        <p style="margin: 10px 0 0; font-size: 14px; opacity: 0.9;">${proposta.numero_proposta || 'S/N'} • ${new Date(proposta.data_emissao).toLocaleDateString('pt-BR')}</p>
-      </div>
-      <div style="padding: 30px 20px;">
-        <p style="font-size: 16px;">Prezado(a) <strong>${proposta.contatos?.nome || 'Cliente'}</strong>,</p>
-        <p style="line-height: 1.6;">${mensagem_personalizada ? mensagem_personalizada.replace(/\n/g, '<br/>') : 'Apresentamos nossa proposta comercial para sua avaliação e consideração.'}</p>
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Proposta Comercial</title>
+    </head>
+    <body style="margin: 0; padding: 20px; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+      <div style="max-width: 650px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
         
-        <h3 style="margin-top: 30px; color: #2563eb; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px;">Serviços Inclusos</h3>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 14px;">
-          <tr style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
-            <th style="padding: 12px 10px; text-align: left;">Descrição</th>
-            <th style="padding: 12px 10px; text-align: right;">Qtd</th>
-            <th style="padding: 12px 10px; text-align: right;">Valor Un.</th>
-            <th style="padding: 12px 10px; text-align: right;">Subtotal</th>
-          </tr>
-          ${itensHtml}
-        </table>
-
-        ${custosHtml}
-
-        <div style="background-color: #f8fafc; padding: 20px; border-radius: 6px; text-align: right; margin-top: 30px; border: 1px solid #e2e8f0;">
-          <p style="margin: 0; font-size: 14px; color: #64748b;">Valor Total do Investimento</p>
-          <p style="margin: 5px 0 0; font-size: 24px; font-weight: bold; color: #2563eb;">${formatCurrency(proposta.valor_total)}</p>
+        <!-- Header -->
+        <div style="background-color: #1e3a8a; padding: 40px 30px; text-align: center; color: #ffffff;">
+          ${logoHtml ? `<div style="background-color: #ffffff; display: inline-block; padding: 10px; border-radius: 8px; margin-bottom: 20px;">${logoHtml}</div>` : ''}
+          <h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Proposta Comercial</h1>
+          <p style="margin: 12px 0 0; font-size: 15px; color: #bfdbfe;">
+            Ref: <strong>${proposta.numero_proposta || 'S/N'}</strong> &nbsp;|&nbsp; 
+            Emissão: <strong>${new Date(proposta.data_emissao).toLocaleDateString('pt-BR')}</strong>
+          </p>
         </div>
 
-        ${incluir_link ? `<div style="text-align: center; margin: 40px 0;"><a href="${linkUrl}" style="background-color: #2563eb; color: #fff; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">Visualizar Proposta Online</a></div>` : ''}
-        ${pdfHtml}
-
-        <div style="font-size: 13px; color: #64748b; margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 20px; line-height: 1.5;">
-          <p style="margin: 0 0 5px;"><strong>Condições de Pagamento:</strong> ${proposta.condicoes_pagamento || 'A combinar'}</p>
-          <p style="margin: 0 0 15px;"><strong>Validade da Proposta:</strong> ${proposta.data_validade ? new Date(proposta.data_validade).toLocaleDateString('pt-BR') : '-'}</p>
+        <!-- Body -->
+        <div style="padding: 40px 30px;">
+          <p style="font-size: 16px; color: #334155; margin-top: 0;">
+            Prezado(a) <strong style="color: #0f172a;">${proposta.contatos?.nome || 'Cliente'}</strong>,
+          </p>
           
-          <p style="margin: 0;"><strong>${consultorioNome}</strong></p>
-          <p style="margin: 0;">${consultorio?.email || ''} | ${consultorio?.telefone_consultorio || ''}</p>
+          <div style="background-color: #f8fafc; border-left: 4px solid #3b82f6; padding: 16px 20px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+            <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #475569;">
+              ${mensagem_personalizada ? mensagem_personalizada.replace(/\n/g, '<br/>') : 'Agradecemos a oportunidade de apresentar nossa proposta comercial. Abaixo você encontra os detalhes dos serviços propostos e o investimento necessário.'}
+            </p>
+          </div>
+          
+          <!-- Services -->
+          <h2 style="font-size: 18px; color: #1e3a8a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; margin-top: 32px;">Detalhes dos Serviços</h2>
+          <table style="width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 14px;">
+            <thead>
+              <tr style="background-color: #f1f5f9;">
+                <th style="padding: 12px; text-align: left; color: #475569; border-radius: 6px 0 0 6px;">Descrição</th>
+                <th style="padding: 12px; text-align: center; color: #475569;">Qtd</th>
+                <th style="padding: 12px; text-align: right; color: #475569;">Valor Un.</th>
+                <th style="padding: 12px; text-align: right; color: #475569; border-radius: 0 6px 6px 0;">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itensHtml}
+            </tbody>
+          </table>
+
+          <!-- Costs -->
+          ${
+            custosHtml
+              ? `
+            <div style="margin-top: 32px;">
+              ${custosHtml}
+            </div>
+          `
+              : ''
+          }
+
+          <!-- Financial Summary -->
+          <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 24px; margin-top: 40px; text-align: right;">
+            <p style="margin: 0 0 8px 0; font-size: 14px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px;">Resumo Financeiro Total</p>
+            <p style="margin: 0; font-size: 32px; font-weight: 800; color: #1e3a8a; letter-spacing: -1px;">
+              ${formatCurrency(proposta.valor_total)}
+            </p>
+            <p style="margin: 12px 0 0 0; font-size: 13px; color: #64748b;">
+              Validade: <strong>${proposta.data_validade ? new Date(proposta.data_validade).toLocaleDateString('pt-BR') : 'A combinar'}</strong>
+            </p>
+          </div>
+
+          <!-- CTAs -->
+          <div style="margin-top: 40px; text-align: center;">
+            ${
+              incluir_link
+                ? `
+              <a href="${linkUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; text-decoration: none; padding: 16px 32px; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 6px rgba(37, 99, 235, 0.2); transition: background-color 0.2s;">
+                Visualizar Proposta Online
+              </a>
+            `
+                : ''
+            }
+            
+            ${
+              pdfHtml
+                ? `
+              <div style="margin-top: 20px;">
+                ${pdfHtml.replace('<p', '<p style="margin:0;"').replace('<a', '<a style="color: #64748b; font-size: 14px; text-decoration: underline;"')}
+              </div>
+            `
+                : ''
+            }
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="background-color: #f8fafc; padding: 30px; border-top: 1px solid #e2e8f0; text-align: center;">
+          <p style="margin: 0 0 12px 0; font-size: 14px; color: #475569;">
+            <strong>Condições de Pagamento:</strong><br/>
+            ${proposta.condicoes_pagamento || 'A combinar'}
+          </p>
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="margin: 0; font-size: 15px; font-weight: 600; color: #334155;">${consultorioNome}</p>
+          <p style="margin: 6px 0 0; font-size: 13px; color: #64748b;">
+            ${consultorio?.email || ''} <span style="margin: 0 8px;">|</span> ${consultorio?.telefone_consultorio || ''}
+          </p>
         </div>
       </div>
-      <img src="${trackingPixel}" width="1" height="1" alt="" style="display:none;" />
-    </div>
+      
+      <!-- Tracking Pixel -->
+      <img src="${trackingPixel}" width="1" height="1" alt="" style="display:block; border:none; outline:none; text-decoration:none;" />
+    </body>
+    </html>
     `
 
     let email_id_resend = null
