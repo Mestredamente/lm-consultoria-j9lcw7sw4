@@ -21,6 +21,10 @@
     "enviar-proposta-email": 3,
     "rastrear-visualizacao-proposta": 2,
     "emitir_nf_proposta": 1,
-    "enviar-proposta-whatsapp": 1
+    "enviar-proposta-whatsapp": 1,
+    "importar-csv-contatos": 1,
+    "importar-csv-empresas": 1,
+    "importar-csv-oportunidades": 1,
+    "upload-documento": 1
   }
 }
