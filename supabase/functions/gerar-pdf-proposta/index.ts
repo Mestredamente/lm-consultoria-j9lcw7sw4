@@ -3,6 +3,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2'
 import { PDFDocument, StandardFonts, rgb } from 'npm:pdf-lib'
 import { corsHeaders } from '../_shared/cors.ts'
 
+// Edge function to generate PDF
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS')
     return new Response('ok', { headers: corsHeaders })
