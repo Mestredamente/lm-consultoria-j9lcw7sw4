@@ -2,7 +2,7 @@
   "_versions": {
     "enviar_cobranca_whatsapp": 17,
     "enviar_lembrete_consulta": 21,
-    "emitir_nota_fiscal": 4,
+    "emitir_nota_fiscal": 5,
     "enviar_comunicado_massa": 5,
     "transcrever_audio": 3,
     "processar_cobrancas_recorrentes": 5,
@@ -19,6 +19,7 @@
     "executar_automacao": 3,
     "gerar-pdf-proposta": 1,
     "enviar-proposta-email": 1,
-    "rastrear-visualizacao-proposta": 1
+    "rastrear-visualizacao-proposta": 1,
+    "emitir_nf_proposta": 1
   }
 }
