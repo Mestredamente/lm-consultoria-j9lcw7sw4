@@ -54,6 +54,12 @@ import { ptBR } from 'date-fns/locale'
 import { Badge } from '@/components/ui/badge'
 import { useNavigate } from 'react-router-dom'
 import { ChartContainer } from '@/components/ui/chart'
+import { Button } from '@/components/ui/button'
+import { Settings2, GripVertical, LayoutDashboard } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
+
+const DEFAULT_LAYOUT = ['kpis', 'evolution', 'status', 'recent', 'services']
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -69,6 +75,9 @@ export default function Dashboard() {
   const [usuarios, setUsuarios] = useState<any[]>([])
   const [empresas, setEmpresas] = useState<any[]>([])
 
+  const [isCustomizeMode, setIsCustomizeMode] = useState(false)
+  const [layout, setLayout] = useState<string[]>(DEFAULT_LAYOUT)
+
   useEffect(() => {
     supabase
       .from('usuarios')
@@ -81,8 +90,47 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => {
-    if (user) fetchData()
+    if (user) {
+      fetchData()
+      fetchPreferences()
+    }
   }, [user, periodo, usuarioId, empresaId])
+
+  const fetchPreferences = async () => {
+    if (!user) return
+    const { data } = await supabase.from('usuarios').select('preferencias_dashboard').eq('id', user.id).single()
+    if (data?.preferencias_dashboard?.layout) {
+      setLayout(data.preferencias_dashboard.layout)
+    }
+  }
+
+  const saveLayout = async (newLayout: string[]) => {
+    if (!user) return
+    const { data } = await supabase.from('usuarios').select('preferencias_dashboard').eq('id', user.id).single()
+    const prefs = data?.preferencias_dashboard || {}
+    await supabase.from('usuarios').update({ preferencias_dashboard: { ...prefs, layout: newLayout } }).eq('id', user.id)
+    toast.success('Dashboard atualizado com sucesso!')
+  }
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    e.dataTransfer.setData('widget_id', id)
+  }
+
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault()
+    const sourceId = e.dataTransfer.getData('widget_id')
+    if (sourceId === targetId) return
+
+    const newLayout = [...layout]
+    const sourceIndex = newLayout.indexOf(sourceId)
+    const targetIndex = newLayout.indexOf(targetId)
+
+    newLayout.splice(sourceIndex, 1)
+    newLayout.splice(targetIndex, 0, sourceId)
+
+    setLayout(newLayout)
+    saveLayout(newLayout)
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -243,186 +291,146 @@ export default function Dashboard() {
     }
   }
 
-  return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12 fade-in">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
-            <Activity className="h-8 w-8 text-primary" />
-            Dashboard Executivo
-          </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Visão consolidada do fluxo comercial e performance de propostas.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
-          <Select value={periodo} onValueChange={setPeriodo}>
-            <SelectTrigger className="w-[140px] bg-transparent border-none focus:ring-0 shadow-none">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Clock className="w-4 h-4 text-gray-400" />
-                <SelectValue placeholder="Período" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="30d">Últimos 30 dias</SelectItem>
-              <SelectItem value="90d">Últimos 90 dias</SelectItem>
-              <SelectItem value="ano">Último ano</SelectItem>
-              <SelectItem value="todos">Todo o período</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="w-px h-6 bg-gray-200" />
-          <Select value={usuarioId} onValueChange={setUsuarioId}>
-            <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 shadow-none">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Filter className="w-4 h-4 text-gray-400" />
-                <SelectValue placeholder="Responsável" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os Responsáveis</SelectItem>
-              {usuarios.map((u) => (
-                <SelectItem key={u.id} value={u.id}>
-                  {u.nome || 'Sem Nome'}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="w-px h-6 bg-gray-200" />
-          <Select value={empresaId} onValueChange={setEmpresaId}>
-            <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 shadow-none">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Filter className="w-4 h-4 text-gray-400" />
-                <SelectValue placeholder="Empresa" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas as Empresas</SelectItem>
-              {empresas.map((e) => (
-                <SelectItem key={e.id} value={e.id}>
-                  {e.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+  const renderWidget = (id: string) => {
+    const Wrapper = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+      <div
+        key={id}
+        draggable={isCustomizeMode}
+        onDragStart={(e) => handleDragStart(e, id)}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => handleDrop(e, id)}
+        className={cn(
+          className,
+          isCustomizeMode ? 'cursor-move ring-2 ring-primary/50 ring-dashed rounded-xl relative opacity-90 hover:opacity-100 transition-opacity bg-gray-50/50' : ''
+        )}
+      >
+        {isCustomizeMode && (
+          <div className="absolute top-2 right-2 z-10 bg-white/90 backdrop-blur p-1.5 rounded-md shadow-sm border border-gray-200">
+            <GripVertical className="w-4 h-4 text-gray-500" />
+          </div>
+        )}
+        <div className={cn(isCustomizeMode && 'pointer-events-none')}>
+          {children}
         </div>
       </div>
+    )
 
-      {loading ? (
-        <div className="flex items-center justify-center p-12">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            <Card className="border-gray-100 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Propostas
-                    </p>
-                    <h3 className="text-2xl font-bold text-gray-900 mt-1">
-                      {kpis.total}
-                    </h3>
+    switch (id) {
+      case 'kpis':
+        return (
+          <Wrapper className="col-span-1 lg:col-span-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <Card className="border-gray-100 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Propostas
+                      </p>
+                      <h3 className="text-2xl font-bold text-gray-900 mt-1">
+                        {kpis.total}
+                      </h3>
+                    </div>
+                    <div className="bg-gray-50 p-2 rounded-lg">
+                      <FileText className="w-4 h-4 text-gray-500" />
+                    </div>
                   </div>
-                  <div className="bg-gray-50 p-2 rounded-lg">
-                    <FileText className="w-4 h-4 text-gray-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card className="border-gray-100 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Valor Pipeline
-                    </p>
-                    <h3 className="text-xl font-bold text-blue-600 mt-1">
-                      {fmt(kpis.valorTotal)}
-                    </h3>
+              <Card className="border-gray-100 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Valor Pipeline
+                      </p>
+                      <h3 className="text-xl font-bold text-blue-600 mt-1">
+                        {fmt(kpis.valorTotal)}
+                      </h3>
+                    </div>
+                    <div className="bg-blue-50 p-2 rounded-lg">
+                      <TrendingUp className="w-4 h-4 text-blue-500" />
+                    </div>
                   </div>
-                  <div className="bg-blue-50 p-2 rounded-lg">
-                    <TrendingUp className="w-4 h-4 text-blue-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card className="border-gray-100 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Conversão
-                    </p>
-                    <h3 className="text-2xl font-bold text-green-600 mt-1">
-                      {kpis.taxaAceitacao.toFixed(1)}%
-                    </h3>
+              <Card className="border-gray-100 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Conversão
+                      </p>
+                      <h3 className="text-2xl font-bold text-green-600 mt-1">
+                        {kpis.taxaAceitacao.toFixed(1)}%
+                      </h3>
+                    </div>
+                    <div className="bg-green-50 p-2 rounded-lg">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                    </div>
                   </div>
-                  <div className="bg-green-50 p-2 rounded-lg">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card className="border-gray-100 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ticket Médio
-                    </p>
-                    <h3 className="text-xl font-bold text-gray-900 mt-1">
-                      {fmt(kpis.valorMedio)}
-                    </h3>
+              <Card className="border-gray-100 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Ticket Médio
+                      </p>
+                      <h3 className="text-xl font-bold text-gray-900 mt-1">
+                        {fmt(kpis.valorMedio)}
+                      </h3>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card className="border-gray-100 shadow-sm">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Pendentes
-                    </p>
-                    <h3 className="text-2xl font-bold text-amber-600 mt-1">
-                      {kpis.pendentes}
-                    </h3>
+              <Card className="border-gray-100 shadow-sm">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Pendentes
+                      </p>
+                      <h3 className="text-2xl font-bold text-amber-600 mt-1">
+                        {kpis.pendentes}
+                      </h3>
+                    </div>
+                    <div className="bg-amber-50 p-2 rounded-lg">
+                      <Clock className="w-4 h-4 text-amber-500" />
+                    </div>
                   </div>
-                  <div className="bg-amber-50 p-2 rounded-lg">
-                    <Clock className="w-4 h-4 text-amber-500" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            <Card className="border-red-100 shadow-sm bg-red-50/30">
-              <CardContent className="p-4">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <p className="text-xs font-medium text-red-600 uppercase tracking-wider">
-                      Vencidas
-                    </p>
-                    <h3 className="text-2xl font-bold text-red-700 mt-1">
-                      {kpis.vencidas}
-                    </h3>
+              <Card className="border-red-100 shadow-sm bg-red-50/30">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <p className="text-xs font-medium text-red-600 uppercase tracking-wider">
+                        Vencidas
+                      </p>
+                      <h3 className="text-2xl font-bold text-red-700 mt-1">
+                        {kpis.vencidas}
+                      </h3>
+                    </div>
+                    <div className="bg-red-100 p-2 rounded-lg">
+                      <AlertCircle className="w-4 h-4 text-red-600" />
+                    </div>
                   </div>
-                  <div className="bg-red-100 p-2 rounded-lg">
-                    <AlertCircle className="w-4 h-4 text-red-600" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="col-span-1 lg:col-span-2 shadow-sm border-gray-100">
+                </CardContent>
+              </Card>
+            </div>
+          </Wrapper>
+        )
+      case 'evolution':
+        return (
+          <Wrapper className="col-span-1 lg:col-span-2">
+            <Card className="shadow-sm border-gray-100 h-full">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <TrendingUp className="w-4 h-4 text-gray-500" />
@@ -483,8 +491,12 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
-
-            <Card className="shadow-sm border-gray-100">
+          </Wrapper>
+        )
+      case 'status':
+        return (
+          <Wrapper className="col-span-1 lg:col-span-1">
+            <Card className="shadow-sm border-gray-100 h-full">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <PieChartIcon className="w-4 h-4 text-gray-500" />
@@ -531,10 +543,12 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="col-span-1 lg:col-span-2 shadow-sm border-gray-100">
+          </Wrapper>
+        )
+      case 'recent':
+        return (
+          <Wrapper className="col-span-1 lg:col-span-2">
+            <Card className="shadow-sm border-gray-100 h-full">
               <CardHeader className="bg-gray-50/50 border-b border-gray-100 pb-3 pt-4">
                 <CardTitle className="text-base font-semibold">
                   Últimas 10 Propostas
@@ -597,8 +611,12 @@ export default function Dashboard() {
                 </Table>
               </CardContent>
             </Card>
-
-            <Card className="shadow-sm border-gray-100">
+          </Wrapper>
+        )
+      case 'services':
+        return (
+          <Wrapper className="col-span-1 lg:col-span-1">
+            <Card className="shadow-sm border-gray-100 h-full">
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-gray-500" />
@@ -658,6 +676,96 @@ export default function Dashboard() {
                 )}
               </CardContent>
             </Card>
+          </Wrapper>
+        )
+      default:
+        return null
+    }
+  }
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto pb-12 fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight flex items-center gap-2">
+            <LayoutDashboard className="h-8 w-8 text-primary" />
+            Dashboard Executivo
+          </h1>
+          <p className="text-muted-foreground mt-1 text-sm">
+            Visão consolidada do fluxo comercial e performance de propostas.
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <Button
+            variant={isCustomizeMode ? "default" : "outline"}
+            onClick={() => setIsCustomizeMode(!isCustomizeMode)}
+            className="gap-2"
+          >
+            <Settings2 className="w-4 h-4" />
+            {isCustomizeMode ? "Concluir" : "Customizar Home"}
+          </Button>
+
+          <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
+          <Select value={periodo} onValueChange={setPeriodo}>
+            <SelectTrigger className="w-[140px] bg-transparent border-none focus:ring-0 shadow-none">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <SelectValue placeholder="Período" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="30d">Últimos 30 dias</SelectItem>
+              <SelectItem value="90d">Últimos 90 dias</SelectItem>
+              <SelectItem value="ano">Último ano</SelectItem>
+              <SelectItem value="todos">Todo o período</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="w-px h-6 bg-gray-200" />
+          <Select value={usuarioId} onValueChange={setUsuarioId}>
+            <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 shadow-none">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Filter className="w-4 h-4 text-gray-400" />
+                <SelectValue placeholder="Responsável" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os Responsáveis</SelectItem>
+              {usuarios.map((u) => (
+                <SelectItem key={u.id} value={u.id}>
+                  {u.nome || 'Sem Nome'}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <div className="w-px h-6 bg-gray-200" />
+          <Select value={empresaId} onValueChange={setEmpresaId}>
+            <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 shadow-none">
+              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Filter className="w-4 h-4 text-gray-400" />
+                <SelectValue placeholder="Empresa" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as Empresas</SelectItem>
+              {empresas.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center p-12">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {layout.map((widgetId) => renderWidget(widgetId))}
           </div>
         </>
       )}

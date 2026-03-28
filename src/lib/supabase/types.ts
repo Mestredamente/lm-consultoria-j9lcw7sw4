@@ -153,6 +153,7 @@ export type Database = {
           data_conclusao: string | null
           descricao: string | null
           empresa_id: string | null
+          google_event_id: string | null
           id: string
           oportunidade_id: string | null
           responsavel_id: string
@@ -168,6 +169,7 @@ export type Database = {
           data_conclusao?: string | null
           descricao?: string | null
           empresa_id?: string | null
+          google_event_id?: string | null
           id?: string
           oportunidade_id?: string | null
           responsavel_id: string
@@ -183,6 +185,7 @@ export type Database = {
           data_conclusao?: string | null
           descricao?: string | null
           empresa_id?: string | null
+          google_event_id?: string | null
           id?: string
           oportunidade_id?: string | null
           responsavel_id?: string
@@ -1192,6 +1195,42 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      integracao_usuarios: {
+        Row: {
+          access_token: string
+          ativo: boolean | null
+          created_at: string | null
+          data_expiracao: string | null
+          id: string
+          provedor: string
+          refresh_token: string | null
+          updated_at: string | null
+          usuario_id: string
+        }
+        Insert: {
+          access_token: string
+          ativo?: boolean | null
+          created_at?: string | null
+          data_expiracao?: string | null
+          id?: string
+          provedor: string
+          refresh_token?: string | null
+          updated_at?: string | null
+          usuario_id: string
+        }
+        Update: {
+          access_token?: string
+          ativo?: boolean | null
+          created_at?: string | null
+          data_expiracao?: string | null
+          id?: string
+          provedor?: string
+          refresh_token?: string | null
+          updated_at?: string | null
+          usuario_id?: string
+        }
+        Relationships: []
       }
       itens_proposta: {
         Row: {
@@ -2691,6 +2730,7 @@ export const Constants = {
 //   responsavel_id: uuid (not null)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+//   google_event_id: text (nullable)
 // Table: avaliacoes
 //   id: uuid (not null, default: gen_random_uuid())
 //   paciente_id: uuid (not null)
@@ -2889,6 +2929,16 @@ export const Constants = {
 //   ativo: boolean (nullable, default: true)
 //   created_at: timestamp with time zone (not null, default: now())
 //   updated_at: timestamp with time zone (not null, default: now())
+// Table: integracao_usuarios
+//   id: uuid (not null, default: gen_random_uuid())
+//   usuario_id: uuid (not null)
+//   provedor: text (not null)
+//   access_token: text (not null)
+//   refresh_token: text (nullable)
+//   data_expiracao: timestamp with time zone (nullable)
+//   ativo: boolean (nullable, default: true)
+//   created_at: timestamp with time zone (nullable, default: now())
+//   updated_at: timestamp with time zone (nullable, default: now())
 // Table: itens_proposta
 //   id: uuid (not null, default: gen_random_uuid())
 //   proposta_id: uuid (not null)
@@ -3273,6 +3323,10 @@ export const Constants = {
 // Table: hoteis_regioes
 //   PRIMARY KEY hoteis_regioes_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY hoteis_regioes_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: integracao_usuarios
+//   PRIMARY KEY integracao_usuarios_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY integracao_usuarios_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id) ON DELETE CASCADE
+//   UNIQUE integracao_usuarios_usuario_id_provedor_key: UNIQUE (usuario_id, provedor)
 // Table: itens_proposta
 //   PRIMARY KEY itens_proposta_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY itens_proposta_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
@@ -3503,6 +3557,10 @@ export const Constants = {
 //     WITH CHECK: (usuario_id = auth.uid())
 //   Policy "team_select_hoteis_regioes" (SELECT, PERMISSIVE) roles={authenticated}
 //     USING: ((usuario_id IN ( SELECT usuarios.id    FROM usuarios   WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))
+// Table: integracao_usuarios
+//   Policy "integracao_usuarios_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
 // Table: itens_proposta
 //   Policy "itens_proposta_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = itens_proposta.proposta_id) AND ((p.responsavel_id = auth.uid()) OR ((p.responsavel_id IN ( SELECT usuarios.id            FROM usuarios           WHERE (COALESCE(usuarios.parent_id, usuarios.id) = get_tenant_id()))) AND (get_user_role() = ANY (ARRAY['admin'::text, 'gerente'::text])))))))
@@ -4604,6 +4662,8 @@ export const Constants = {
 //   audit_financeiro_trigger: CREATE TRIGGER audit_financeiro_trigger AFTER INSERT OR DELETE OR UPDATE ON public.financeiro FOR EACH ROW EXECUTE FUNCTION log_audit_action()
 // Table: hoteis_regioes
 //   set_hoteis_regioes_updated_at: CREATE TRIGGER set_hoteis_regioes_updated_at BEFORE UPDATE ON public.hoteis_regioes FOR EACH ROW EXECUTE FUNCTION set_updated_at()
+// Table: integracao_usuarios
+//   set_integracao_usuarios_updated_at: CREATE TRIGGER set_integracao_usuarios_updated_at BEFORE UPDATE ON public.integracao_usuarios FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: laudos
 //   audit_laudos_trigger: CREATE TRIGGER audit_laudos_trigger AFTER INSERT OR DELETE OR UPDATE ON public.laudos FOR EACH ROW EXECUTE FUNCTION log_audit_action()
 // Table: materiais
@@ -4658,6 +4718,8 @@ export const Constants = {
 // Table: hoteis_regioes
 //   CREATE INDEX idx_hoteis_regioes_ativo ON public.hoteis_regioes USING btree (ativo)
 //   CREATE INDEX idx_hoteis_regioes_regiao ON public.hoteis_regioes USING btree (regiao)
+// Table: integracao_usuarios
+//   CREATE UNIQUE INDEX integracao_usuarios_usuario_id_provedor_key ON public.integracao_usuarios USING btree (usuario_id, provedor)
 // Table: itens_proposta
 //   CREATE INDEX idx_itens_proposta_proposta_id ON public.itens_proposta USING btree (proposta_id)
 // Table: logs_execucao_automacao

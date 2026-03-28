@@ -76,6 +76,7 @@ export function IntegrationsSettings() {
   const [activeInts, setActiveInts] = useState<Record<string, boolean>>({
     whatsapp: false,
     google_calendar: false,
+    outlook: false,
   })
   const [configOpen, setConfigOpen] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -114,15 +115,19 @@ export function IntegrationsSettings() {
         }))
       }
 
-      const { data: integ } = await supabase
+      const { data: integs } = await supabase
         .from('integracao_usuarios')
         .select('*')
         .eq('usuario_id', user?.id)
-        .eq('provedor', 'google')
-        .maybeSingle()
 
-      if (integ && integ.ativo) {
-        setActiveInts((p) => ({ ...p, google_calendar: true }))
+      if (integs) {
+        setActiveInts((p) => ({
+          ...p,
+          google_calendar: integs.some(
+            (i) => i.provedor === 'google' && i.ativo,
+          ),
+          outlook: integs.some((i) => i.provedor === 'outlook' && i.ativo),
+        }))
       }
     } catch (err) {
       console.error(err)
@@ -137,6 +142,8 @@ export function IntegrationsSettings() {
         setConfigOpen('whatsapp')
       } else if (id === 'google_calendar') {
         handleGoogleAuth()
+      } else if (id === 'outlook') {
+        handleOutlookAuth()
       } else {
         toast.info(`A integração com ${name} estará disponível em breve.`)
       }
@@ -144,11 +151,38 @@ export function IntegrationsSettings() {
       if (id === 'whatsapp') {
         handleSaveWaSettings(true)
       } else if (id === 'google_calendar') {
-        handleGoogleDisconnect()
+        handleDisconnect('google', 'Google Calendar')
+      } else if (id === 'outlook') {
+        handleDisconnect('outlook', 'Microsoft Outlook')
       } else {
         toast.success(`${name} desconectado.`)
       }
     }
+  }
+
+  const handleOutlookAuth = async () => {
+    setLoading(true)
+    setTimeout(async () => {
+      try {
+        await supabase.from('integracao_usuarios').upsert(
+          {
+            usuario_id: user?.id,
+            provedor: 'outlook',
+            access_token: 'mock_outlook_access_token',
+            refresh_token: 'mock_outlook_refresh_token',
+            ativo: true,
+          },
+          { onConflict: 'usuario_id, provedor' },
+        )
+
+        setActiveInts((p) => ({ ...p, outlook: true }))
+        toast.success('Microsoft Outlook conectado com sucesso!')
+      } catch (err: any) {
+        toast.error('Erro ao conectar Outlook: ' + err.message)
+      } finally {
+        setLoading(false)
+      }
+    }, 1000)
   }
 
   const handleGoogleAuth = async () => {
@@ -177,16 +211,19 @@ export function IntegrationsSettings() {
     }, 1000)
   }
 
-  const handleGoogleDisconnect = async () => {
+  const handleDisconnect = async (provedor: string, name: string) => {
     try {
       await supabase
         .from('integracao_usuarios')
         .delete()
         .eq('usuario_id', user?.id)
-        .eq('provedor', 'google')
+        .eq('provedor', provedor)
 
-      setActiveInts((p) => ({ ...p, google_calendar: false }))
-      toast.success('Google Calendar desconectado.')
+      setActiveInts((p) => ({
+        ...p,
+        [provedor === 'google' ? 'google_calendar' : provedor]: false,
+      }))
+      toast.success(`${name} desconectado.`)
     } catch (err: any) {
       toast.error('Erro ao desconectar: ' + err.message)
     }
