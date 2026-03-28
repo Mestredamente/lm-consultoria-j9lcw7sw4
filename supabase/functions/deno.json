@@ -26,7 +26,8 @@
     "importar-csv-empresas": 1,
     "importar-csv-oportunidades": 1,
     "upload-documento": 1,
-    "sincronizar-google-calendar": 1,
-    "gerar-recomendacoes-ia": 1
+    "sincronizar-google-calendar": 2,
+    "gerar-recomendacoes-ia": 1,
+    "notificar-reunioes": 1
   }
 }

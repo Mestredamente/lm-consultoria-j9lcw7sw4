@@ -98,7 +98,11 @@ export default function Dashboard() {
 
   const fetchPreferences = async () => {
     if (!user) return
-    const { data } = await supabase.from('usuarios').select('preferencias_dashboard').eq('id', user.id).single()
+    const { data } = await supabase
+      .from('usuarios')
+      .select('preferencias_dashboard')
+      .eq('id', user.id)
+      .single()
     if (data?.preferencias_dashboard?.layout) {
       setLayout(data.preferencias_dashboard.layout)
     }
@@ -106,9 +110,16 @@ export default function Dashboard() {
 
   const saveLayout = async (newLayout: string[]) => {
     if (!user) return
-    const { data } = await supabase.from('usuarios').select('preferencias_dashboard').eq('id', user.id).single()
+    const { data } = await supabase
+      .from('usuarios')
+      .select('preferencias_dashboard')
+      .eq('id', user.id)
+      .single()
     const prefs = data?.preferencias_dashboard || {}
-    await supabase.from('usuarios').update({ preferencias_dashboard: { ...prefs, layout: newLayout } }).eq('id', user.id)
+    await supabase
+      .from('usuarios')
+      .update({ preferencias_dashboard: { ...prefs, layout: newLayout } })
+      .eq('id', user.id)
     toast.success('Dashboard atualizado com sucesso!')
   }
 
@@ -292,7 +303,13 @@ export default function Dashboard() {
   }
 
   const renderWidget = (id: string) => {
-    const Wrapper = ({ children, className }: { children: React.ReactNode, className?: string }) => (
+    const Wrapper = ({
+      children,
+      className,
+    }: {
+      children: React.ReactNode
+      className?: string
+    }) => (
       <div
         key={id}
         draggable={isCustomizeMode}
@@ -301,7 +318,9 @@ export default function Dashboard() {
         onDrop={(e) => handleDrop(e, id)}
         className={cn(
           className,
-          isCustomizeMode ? 'cursor-move ring-2 ring-primary/50 ring-dashed rounded-xl relative opacity-90 hover:opacity-100 transition-opacity bg-gray-50/50' : ''
+          isCustomizeMode
+            ? 'cursor-move ring-2 ring-primary/50 ring-dashed rounded-xl relative opacity-90 hover:opacity-100 transition-opacity bg-gray-50/50'
+            : '',
         )}
       >
         {isCustomizeMode && (
@@ -698,63 +717,64 @@ export default function Dashboard() {
 
         <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
           <Button
-            variant={isCustomizeMode ? "default" : "outline"}
+            variant={isCustomizeMode ? 'default' : 'outline'}
             onClick={() => setIsCustomizeMode(!isCustomizeMode)}
             className="gap-2"
           >
             <Settings2 className="w-4 h-4" />
-            {isCustomizeMode ? "Concluir" : "Customizar Home"}
+            {isCustomizeMode ? 'Concluir' : 'Customizar Home'}
           </Button>
 
           <div className="flex flex-wrap items-center gap-3 bg-white p-2 rounded-xl border border-gray-100 shadow-sm">
-          <Select value={periodo} onValueChange={setPeriodo}>
-            <SelectTrigger className="w-[140px] bg-transparent border-none focus:ring-0 shadow-none">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Clock className="w-4 h-4 text-gray-400" />
-                <SelectValue placeholder="Período" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="30d">Últimos 30 dias</SelectItem>
-              <SelectItem value="90d">Últimos 90 dias</SelectItem>
-              <SelectItem value="ano">Último ano</SelectItem>
-              <SelectItem value="todos">Todo o período</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="w-px h-6 bg-gray-200" />
-          <Select value={usuarioId} onValueChange={setUsuarioId}>
-            <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 shadow-none">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Filter className="w-4 h-4 text-gray-400" />
-                <SelectValue placeholder="Responsável" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os Responsáveis</SelectItem>
-              {usuarios.map((u) => (
-                <SelectItem key={u.id} value={u.id}>
-                  {u.nome || 'Sem Nome'}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <div className="w-px h-6 bg-gray-200" />
-          <Select value={empresaId} onValueChange={setEmpresaId}>
-            <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 shadow-none">
-              <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
-                <Filter className="w-4 h-4 text-gray-400" />
-                <SelectValue placeholder="Empresa" />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todas">Todas as Empresas</SelectItem>
-              {empresas.map((e) => (
-                <SelectItem key={e.id} value={e.id}>
-                  {e.nome}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={periodo} onValueChange={setPeriodo}>
+              <SelectTrigger className="w-[140px] bg-transparent border-none focus:ring-0 shadow-none">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Clock className="w-4 h-4 text-gray-400" />
+                  <SelectValue placeholder="Período" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                <SelectItem value="90d">Últimos 90 dias</SelectItem>
+                <SelectItem value="ano">Último ano</SelectItem>
+                <SelectItem value="todos">Todo o período</SelectItem>
+              </SelectContent>
+            </Select>
+            <div className="w-px h-6 bg-gray-200" />
+            <Select value={usuarioId} onValueChange={setUsuarioId}>
+              <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 shadow-none">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Filter className="w-4 h-4 text-gray-400" />
+                  <SelectValue placeholder="Responsável" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os Responsáveis</SelectItem>
+                {usuarios.map((u) => (
+                  <SelectItem key={u.id} value={u.id}>
+                    {u.nome || 'Sem Nome'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <div className="w-px h-6 bg-gray-200" />
+            <Select value={empresaId} onValueChange={setEmpresaId}>
+              <SelectTrigger className="w-[160px] bg-transparent border-none focus:ring-0 shadow-none">
+                <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+                  <Filter className="w-4 h-4 text-gray-400" />
+                  <SelectValue placeholder="Empresa" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todas">Todas as Empresas</SelectItem>
+                {empresas.map((e) => (
+                  <SelectItem key={e.id} value={e.id}>
+                    {e.nome}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
 
