@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -36,8 +36,20 @@ export function SendEmailModal({
   const [includeLink, setIncludeLink] = useState(true)
   const [loading, setLoading] = useState(false)
 
+  useEffect(() => {
+    if (open) {
+      setEmail(defaultEmail || '')
+      setMessage('')
+    }
+  }, [open, defaultEmail])
+
   const handleSend = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!email) return toast.error('Email é obrigatório')
+    if (!emailRegex.test(email)) return toast.error('Email inválido')
+    if (message.length > 500)
+      return toast.error('A mensagem deve ter no máximo 500 caracteres')
+
     setLoading(true)
     try {
       const { error } = await supabase.functions.invoke(
@@ -85,7 +97,11 @@ export function SendEmailModal({
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Olá, segue a nossa proposta..."
               className="h-24 resize-none"
+              maxLength={500}
             />
+            <div className="text-xs text-right text-gray-500">
+              {message.length}/500
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <Checkbox

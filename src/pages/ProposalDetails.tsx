@@ -26,6 +26,7 @@ import {
   Eye,
   CheckCircle,
   XCircle,
+  RefreshCw,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -64,29 +65,41 @@ export default function ProposalDetails() {
   const [isDeleting, setIsDeleting] = useState(false)
   const [isEmailOpen, setIsEmailOpen] = useState(false)
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
+  const [emailsSent, setEmailsSent] = useState<any[]>([])
+  const [emailToResend, setEmailToResend] = useState('')
 
   const fetchDetails = async () => {
     try {
       setLoading(true)
-      const [propRes, itemsRes, costsRes, histRes] = await Promise.all([
-        supabase
-          .from('propostas')
-          .select('*, empresas(*), contatos(*), usuarios(*)')
-          .eq('id', id)
-          .single(),
-        supabase.from('itens_proposta').select('*').eq('proposta_id', id),
-        supabase.from('custos_operacionais').select('*').eq('proposta_id', id),
-        supabase
-          .from('historico_propostas')
-          .select('*')
-          .eq('proposta_id', id)
-          .order('data_acao', { ascending: false }),
-      ])
+      const [propRes, itemsRes, costsRes, histRes, emailsRes] =
+        await Promise.all([
+          supabase
+            .from('propostas')
+            .select('*, empresas(*), contatos(*), usuarios(*)')
+            .eq('id', id)
+            .single(),
+          supabase.from('itens_proposta').select('*').eq('proposta_id', id),
+          supabase
+            .from('custos_operacionais')
+            .select('*')
+            .eq('proposta_id', id),
+          supabase
+            .from('historico_propostas')
+            .select('*')
+            .eq('proposta_id', id)
+            .order('data_acao', { ascending: false }),
+          supabase
+            .from('emails_propostas')
+            .select('*')
+            .eq('proposta_id', id)
+            .order('data_envio', { ascending: false }),
+        ])
       if (propRes.error) throw propRes.error
       setProposal(propRes.data)
       setItems(itemsRes.data || [])
       setCosts(costsRes.data || [])
       setHistory(histRes.data || [])
+      setEmailsSent(emailsRes.data || [])
     } catch (error: any) {
       toast.error('Erro ao carregar: ' + error.message)
     } finally {
@@ -161,6 +174,21 @@ export default function ProposalDetails() {
     d ? new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '-'
   const mc = (m: number) =>
     m > 35 ? 'text-green-600' : m >= 20 ? 'text-yellow-600' : 'text-red-600'
+
+  const handleDeleteEmail = async (emailId: string) => {
+    if (!confirm('Deseja realmente remover o registro deste e-mail?')) return
+    try {
+      const { error } = await supabase
+        .from('emails_propostas')
+        .delete()
+        .eq('id', emailId)
+      if (error) throw error
+      toast.success('Registro de e-mail removido')
+      setEmailsSent(emailsSent.filter((e) => e.id !== emailId))
+    } catch (err: any) {
+      toast.error('Erro ao deletar registro: ' + err.message)
+    }
+  }
 
   const handleGeneratePdf = async () => {
     setIsGeneratingPdf(true)
@@ -245,7 +273,10 @@ export default function ProposalDetails() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setIsEmailOpen(true)}
+            onClick={() => {
+              setEmailToResend(proposal.contatos?.email || '')
+              setIsEmailOpen(true)
+            }}
           >
             <Mail className="w-4 h-4 mr-2" /> Enviar por Email
           </Button>
@@ -309,6 +340,7 @@ export default function ProposalDetails() {
           <TabsTrigger value="historico">Histórico</TabsTrigger>
           <TabsTrigger value="versoes">Versões</TabsTrigger>
           <TabsTrigger value="notas">Notas Internas</TabsTrigger>
+          <TabsTrigger value="emails">Emails ({emailsSent.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="resumo" className="mt-4 space-y-6">
@@ -449,6 +481,80 @@ export default function ProposalDetails() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="emails" className="mt-4">
+          <Card>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Data de Envio</TableHead>
+                    <TableHead>Destinatário</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {emailsSent.map((email) => (
+                    <TableRow key={email.id}>
+                      <TableCell className="whitespace-nowrap">
+                        {new Date(email.data_envio).toLocaleString('pt-BR')}
+                      </TableCell>
+                      <TableCell>{email.email_destinatario}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={
+                            email.status === 'Enviado'
+                              ? 'default'
+                              : email.status === 'Entregue'
+                                ? 'secondary'
+                                : 'destructive'
+                          }
+                        >
+                          {email.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setEmailToResend(email.email_destinatario)
+                              setIsEmailOpen(true)
+                            }}
+                            title="Reenviar E-mail"
+                          >
+                            <RefreshCw className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500 hover:text-red-600 hover:bg-red-50"
+                            onClick={() => handleDeleteEmail(email.id)}
+                            title="Excluir Registro"
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {emailsSent.length === 0 && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={4}
+                        className="text-center py-6 text-gray-500"
+                      >
+                        Nenhum e-mail registrado.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
       </Tabs>
 
       <NewProposalModal
@@ -461,8 +567,8 @@ export default function ProposalDetails() {
       <SendEmailModal
         open={isEmailOpen}
         onOpenChange={setIsEmailOpen}
-        proposalId={id}
-        defaultEmail={proposal.contatos?.email}
+        proposalId={id!}
+        defaultEmail={emailToResend || proposal.contatos?.email}
         onSuccess={fetchDetails}
       />
 
