@@ -1,15 +1,29 @@
 import React, { useState } from 'react'
-import { Plus, Zap, Mail, CheckSquare, Trash2, PenLine } from 'lucide-react'
+import {
+  Plus,
+  Zap,
+  Mail,
+  CheckSquare,
+  Trash2,
+  PenLine,
+  Globe,
+  CheckCircle2,
+  XCircle,
+} from 'lucide-react'
 import { useAutomations } from '@/hooks/use-automations'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardContent } from '@/components/ui/card'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { AutomationDialog } from '@/components/automations/AutomationDialog'
 
 export default function Automations() {
   const {
     automations,
+    logs,
     loading,
     addAutomation,
     updateAutomation,
@@ -81,88 +95,184 @@ export default function Automations() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 pt-4">
-        {automations.length === 0 ? (
-          <div className="bg-gray-50/50 border border-gray-200 border-dashed rounded-[32px] p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
-            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
-              <Zap className="w-8 h-8 text-gray-300" />
-            </div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">
-              Nenhum fluxo configurado
-            </h3>
-            <p className="text-gray-500 max-w-sm mb-6">
-              Comece a automatizar suas tarefas diárias criando seu primeiro
-              fluxo de trabalho.
-            </p>
-            <Button
-              onClick={() => setIsDialogOpen(true)}
-              variant="outline"
-              className="rounded-full bg-white"
-            >
-              Criar Automação
-            </Button>
-          </div>
-        ) : (
-          automations.map((auto) => (
-            <Card
-              key={auto.id}
-              className={`glass-card transition-all duration-300 border-white/60 ${!auto.ativo ? 'opacity-60 bg-gray-50/50' : 'hover:shadow-md'}`}
-            >
-              <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
-                <div className="flex items-start gap-4 flex-1">
-                  <div
-                    className={`p-3.5 rounded-xl shrink-0 ${auto.acao === 'Enviar Email' ? 'bg-blue-100 text-blue-600' : 'bg-emerald-100 text-emerald-600'}`}
-                  >
-                    {auto.acao === 'Enviar Email' ? (
-                      <Mail className="w-5 h-5" />
-                    ) : auto.acao === 'Criar Tarefa' ? (
-                      <CheckSquare className="w-5 h-5" />
-                    ) : (
-                      <PenLine className="w-5 h-5" />
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1.5">
-                      {auto.nome}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
-                      <span className="bg-white border border-gray-200 px-2 py-1 rounded-md shadow-sm text-gray-700">
-                        Se: {auto.gatilho}
-                      </span>
-                      <span className="text-gray-300">→</span>
-                      <span className="bg-white border border-gray-200 px-2 py-1 rounded-md shadow-sm text-gray-700">
-                        Então: {auto.acao}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+      <Tabs defaultValue="fluxos" className="w-full pt-4">
+        <TabsList className="mb-6 bg-white border border-gray-100 p-1 rounded-xl shadow-sm">
+          <TabsTrigger
+            value="fluxos"
+            className="rounded-lg data-[state=active]:bg-gray-50"
+          >
+            Fluxos de Automação
+          </TabsTrigger>
+          <TabsTrigger
+            value="logs"
+            className="rounded-lg data-[state=active]:bg-gray-50"
+          >
+            Logs de Execução
+          </TabsTrigger>
+        </TabsList>
 
-                <div className="flex items-center justify-between sm:justify-end gap-5 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-0 border-gray-100 mt-2 sm:mt-0">
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={`text-xs font-bold uppercase tracking-wider ${auto.ativo ? 'text-emerald-600' : 'text-gray-400'}`}
-                    >
-                      {auto.ativo ? 'Ativo' : 'Inativo'}
-                    </span>
-                    <Switch
-                      checked={auto.ativo}
-                      onCheckedChange={() => handleToggle(auto.id, auto.ativo)}
-                    />
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleDelete(auto.id)}
-                    className="text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+        <TabsContent value="fluxos">
+          <div className="grid grid-cols-1 gap-4">
+            {automations.length === 0 ? (
+              <div className="bg-gray-50/50 border border-gray-200 border-dashed rounded-[32px] p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
+                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
+                  <Zap className="w-8 h-8 text-gray-300" />
                 </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Nenhum fluxo configurado
+                </h3>
+                <p className="text-gray-500 max-w-sm mb-6">
+                  Comece a automatizar suas tarefas diárias criando seu primeiro
+                  fluxo de trabalho.
+                </p>
+                <Button
+                  onClick={() => setIsDialogOpen(true)}
+                  variant="outline"
+                  className="rounded-full bg-white"
+                >
+                  Criar Automação
+                </Button>
+              </div>
+            ) : (
+              automations.map((auto) => (
+                <Card
+                  key={auto.id}
+                  className={`glass-card transition-all duration-300 border-white/60 ${!auto.ativo ? 'opacity-60 bg-gray-50/50' : 'hover:shadow-md'}`}
+                >
+                  <CardContent className="p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div
+                        className={`p-3.5 rounded-xl shrink-0 ${auto.acao === 'Enviar Email' ? 'bg-blue-100 text-blue-600' : auto.acao === 'Enviar Webhook' ? 'bg-purple-100 text-purple-600' : 'bg-emerald-100 text-emerald-600'}`}
+                      >
+                        {auto.acao === 'Enviar Email' ? (
+                          <Mail className="w-5 h-5" />
+                        ) : auto.acao === 'Criar Tarefa' ? (
+                          <CheckSquare className="w-5 h-5" />
+                        ) : auto.acao === 'Enviar Webhook' ? (
+                          <Globe className="w-5 h-5" />
+                        ) : (
+                          <PenLine className="w-5 h-5" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900 leading-tight mb-1.5">
+                          {auto.nome}
+                        </h3>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 font-medium">
+                          <span className="bg-white border border-gray-200 px-2 py-1 rounded-md shadow-sm text-gray-700">
+                            Se: {auto.gatilho}
+                          </span>
+                          <span className="text-gray-300">→</span>
+                          <span className="bg-white border border-gray-200 px-2 py-1 rounded-md shadow-sm text-gray-700">
+                            Então: {auto.acao}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between sm:justify-end gap-5 w-full sm:w-auto pt-4 sm:pt-0 border-t sm:border-0 border-gray-100 mt-2 sm:mt-0">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className={`text-xs font-bold uppercase tracking-wider ${auto.ativo ? 'text-emerald-600' : 'text-gray-400'}`}
+                        >
+                          {auto.ativo ? 'Ativo' : 'Inativo'}
+                        </span>
+                        <Switch
+                          checked={auto.ativo}
+                          onCheckedChange={() =>
+                            handleToggle(auto.id, auto.ativo)
+                          }
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(auto.id)}
+                        className="text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="logs">
+          <Card className="glass-card border-white/60">
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-gray-500 uppercase bg-gray-50/50 border-b border-gray-100">
+                    <tr>
+                      <th className="px-6 py-4 font-semibold">Data/Hora</th>
+                      <th className="px-6 py-4 font-semibold">Fluxo</th>
+                      <th className="px-6 py-4 font-semibold">Status</th>
+                      <th className="px-6 py-4 font-semibold">Detalhes</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100/50">
+                    {logs.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan={4}
+                          className="px-6 py-8 text-center text-gray-500"
+                        >
+                          Nenhuma execução registrada até o momento.
+                        </td>
+                      </tr>
+                    ) : (
+                      logs.map((log) => (
+                        <tr
+                          key={log.id}
+                          className="hover:bg-gray-50/30 transition-colors"
+                        >
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                            {format(
+                              new Date(log.created_at),
+                              "dd/MM/yyyy 'às' HH:mm",
+                              { locale: ptBR },
+                            )}
+                          </td>
+                          <td className="px-6 py-4 font-medium text-gray-900">
+                            {log.fluxos_automacao?.nome || 'Fluxo Excluído'}
+                          </td>
+                          <td className="px-6 py-4">
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
+                                log.status === 'sucesso'
+                                  ? 'bg-emerald-50 text-emerald-700'
+                                  : 'bg-red-50 text-red-700'
+                              }`}
+                            >
+                              {log.status === 'sucesso' ? (
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                              ) : (
+                                <XCircle className="w-3.5 h-3.5" />
+                              )}
+                              {log.status === 'sucesso' ? 'Sucesso' : 'Erro'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-gray-500 max-w-xs truncate">
+                            <span
+                              className="font-mono text-xs bg-gray-100 px-2 py-1 rounded"
+                              title={JSON.stringify(log.detalhes)}
+                            >
+                              {JSON.stringify(log.detalhes)}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <AutomationDialog
         open={isDialogOpen}

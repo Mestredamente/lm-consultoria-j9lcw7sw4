@@ -13,8 +13,19 @@ export interface FluxoAutomacao {
   created_at: string
 }
 
+export interface LogExecucaoAutomacao {
+  id: string
+  fluxo_id: string
+  usuario_id: string
+  status: string
+  detalhes: any
+  created_at: string
+  fluxos_automacao?: { nome: string }
+}
+
 export function useAutomations() {
   const [automations, setAutomations] = useState<FluxoAutomacao[]>([])
+  const [logs, setLogs] = useState<LogExecucaoAutomacao[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
@@ -32,9 +43,23 @@ export function useAutomations() {
     setLoading(false)
   }, [user])
 
+  const fetchLogs = useCallback(async () => {
+    if (!user) return
+    const { data, error } = await supabase
+      .from('logs_execucao_automacao')
+      .select('*, fluxos_automacao(nome)')
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    if (!error && data) {
+      setLogs(data as any[])
+    }
+  }, [user])
+
   useEffect(() => {
     fetchAutomations()
-  }, [fetchAutomations])
+    fetchLogs()
+  }, [fetchAutomations, fetchLogs])
 
   const addAutomation = async (automation: Partial<FluxoAutomacao>) => {
     if (!user) return { error: 'Not authenticated' }
@@ -85,10 +110,12 @@ export function useAutomations() {
 
   return {
     automations,
+    logs,
     loading,
     addAutomation,
     updateAutomation,
     deleteAutomation,
     fetchAutomations,
+    fetchLogs,
   }
 }

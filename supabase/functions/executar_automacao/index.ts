@@ -64,6 +64,9 @@ Deno.serve(async (req: Request) => {
     let executados = 0
 
     for (const fluxo of fluxos) {
+      let status_exec = 'sucesso'
+      let detalhes_exec: any = { record_id: record.id, table }
+
       try {
         const detalhes =
           typeof fluxo.detalhes_acao === 'string'
@@ -174,12 +177,53 @@ Deno.serve(async (req: Request) => {
               .eq('id', record.id)
             executados++
           }
+        } else if (fluxo.acao === 'Enviar Webhook') {
+          const url = detalhes.url
+          let payloadStr = detalhes.payload || '{}'
+
+          const nomeAlvo = record.nome || 'Registro'
+          payloadStr = payloadStr.replace(/\[Nome\]/gi, nomeAlvo)
+
+          let payloadObj = {}
+          try {
+            payloadObj = JSON.parse(payloadStr)
+          } catch (e) {
+            payloadObj = { text: payloadStr }
+          }
+
+          if (url) {
+            const res = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                ...payloadObj,
+                record: record,
+                table: table,
+              }),
+            })
+            if (!res.ok) {
+              throw new Error(`Webhook failed: ${res.statusText}`)
+            }
+            executados++
+          }
         }
       } catch (err: any) {
+        status_exec = 'erro'
+        detalhes_exec.error = err.message
         console.error(
           `[Fluxo ${fluxo.id}] Erro de execução (graceful catch):`,
           err.message,
         )
+      } finally {
+        const { error: logErr } = await supabase
+          .from('logs_execucao_automacao')
+          .insert({
+            fluxo_id: fluxo.id,
+            usuario_id: record.usuario_id,
+            status: status_exec,
+            detalhes: detalhes_exec,
+          })
+        if (logErr) console.error(`Falha ao salvar log:`, logErr.message)
       }
     }
 

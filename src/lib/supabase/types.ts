@@ -1772,6 +1772,7 @@ export type Database = {
       }
       propostas: {
         Row: {
+          comentarios_cliente: string | null
           condicoes_pagamento: string | null
           contato_id: string | null
           created_at: string
@@ -1784,10 +1785,12 @@ export type Database = {
           oportunidade_id: string | null
           responsavel_id: string
           status: string
+          status_nf: string | null
           updated_at: string
           valor_total: number
         }
         Insert: {
+          comentarios_cliente?: string | null
           condicoes_pagamento?: string | null
           contato_id?: string | null
           created_at?: string
@@ -1800,10 +1803,12 @@ export type Database = {
           oportunidade_id?: string | null
           responsavel_id: string
           status?: string
+          status_nf?: string | null
           updated_at?: string
           valor_total?: number
         }
         Update: {
+          comentarios_cliente?: string | null
           condicoes_pagamento?: string | null
           contato_id?: string | null
           created_at?: string
@@ -1816,6 +1821,7 @@ export type Database = {
           oportunidade_id?: string | null
           responsavel_id?: string
           status?: string
+          status_nf?: string | null
           updated_at?: string
           valor_total?: number
         }
@@ -2355,6 +2361,7 @@ export type Database = {
       }
       get_patient_portal_data: { Args: { p_hash: string }; Returns: Json }
       get_prescricao_publica: { Args: { p_hash: string }; Returns: Json }
+      get_public_proposal: { Args: { p_proposta_id: string }; Returns: Json }
       get_tenant_id: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
       pay_appointment_portal: {
@@ -2362,6 +2369,10 @@ export type Database = {
         Returns: boolean
       }
       request_medical_record: { Args: { p_hash: string }; Returns: boolean }
+      respond_public_proposal: {
+        Args: { p_comentario: string; p_proposta_id: string; p_status: string }
+        Returns: boolean
+      }
       snapshot_proposta: {
         Args: { p_proposta_id: string; p_resumo: string; p_usuario_id: string }
         Returns: string
@@ -2901,6 +2912,8 @@ export const Constants = {
 //   updated_at: timestamp with time zone (not null, default: now())
 //   notas_internas: text (nullable)
 //   condicoes_pagamento: text (nullable)
+//   status_nf: text (nullable, default: 'Pendente'::text)
+//   comentarios_cliente: text (nullable)
 // Table: propostas_versoes
 //   id: uuid (not null, default: gen_random_uuid())
 //   proposta_id: uuid (not null)
@@ -3857,6 +3870,72 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION get_public_proposal(uuid)
+//   CREATE OR REPLACE FUNCTION public.get_public_proposal(p_proposta_id uuid)
+//    RETURNS jsonb
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//       v_proposta jsonb;
+//       v_itens jsonb;
+//       v_empresa jsonb;
+//       v_consultorio jsonb;
+//   BEGIN
+//       SELECT jsonb_build_object(
+//           'id', p.id,
+//           'numero_proposta', p.numero_proposta,
+//           'status', p.status,
+//           'valor_total', p.valor_total,
+//           'data_emissao', p.data_emissao,
+//           'data_validade', p.data_validade,
+//           'condicoes_pagamento', p.condicoes_pagamento,
+//           'comentarios_cliente', p.comentarios_cliente
+//       ) INTO v_proposta
+//       FROM public.propostas p
+//       WHERE p.id = p_proposta_id;
+//
+//       IF v_proposta IS NULL THEN
+//           RETURN NULL;
+//       END IF;
+//
+//       SELECT COALESCE(jsonb_agg(jsonb_build_object(
+//           'tipo_servico', i.tipo_servico,
+//           'descricao', i.descricao,
+//           'quantidade', i.quantidade,
+//           'valor_unitario', i.valor_unitario,
+//           'subtotal', i.subtotal
+//       )), '[]'::jsonb) INTO v_itens
+//       FROM public.itens_proposta i
+//       WHERE i.proposta_id = p_proposta_id;
+//
+//       SELECT jsonb_build_object(
+//           'nome', e.nome
+//       ) INTO v_empresa
+//       FROM public.propostas p
+//       LEFT JOIN public.empresas e ON p.empresa_id = e.id
+//       WHERE p.id = p_proposta_id;
+//
+//       SELECT jsonb_build_object(
+//           'nome', u.nome,
+//           'nome_consultorio', u.nome_consultorio,
+//           'email', u.email,
+//           'telefone_consultorio', u.telefone_consultorio,
+//           'logo_url', u.logo_url
+//       ) INTO v_consultorio
+//       FROM public.propostas p
+//       JOIN public.usuarios u ON p.responsavel_id = u.id
+//       WHERE p.id = p_proposta_id;
+//
+//       RETURN jsonb_build_object(
+//           'proposta', v_proposta,
+//           'itens', v_itens,
+//           'empresa', v_empresa,
+//           'consultorio', v_consultorio
+//       );
+//   END;
+//   $function$
+//
 // FUNCTION get_tenant_id()
 //   CREATE OR REPLACE FUNCTION public.get_tenant_id()
 //    RETURNS uuid
@@ -4118,6 +4197,32 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION respond_public_proposal(uuid, text, text)
+//   CREATE OR REPLACE FUNCTION public.respond_public_proposal(p_proposta_id uuid, p_status text, p_comentario text)
+//    RETURNS boolean
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   BEGIN
+//       IF p_status NOT IN ('Aceita', 'Rejeitada') THEN
+//           RAISE EXCEPTION 'Status inválido';
+//       END IF;
+//
+//       UPDATE public.propostas
+//       SET status = p_status,
+//           comentarios_cliente = p_comentario
+//       WHERE id = p_proposta_id AND status NOT IN ('Aceita', 'Rejeitada');
+//
+//       IF FOUND THEN
+//           -- O trigger log_proposta_status_change cuidará de inserir em historico_propostas
+//           -- e o trigger trg_notifica_status_proposta cuidará das notificações
+//           RETURN true;
+//       END IF;
+//
+//       RETURN false;
+//   END;
+//   $function$
+//
 // FUNCTION rls_auto_enable()
 //   CREATE OR REPLACE FUNCTION public.rls_auto_enable()
 //    RETURNS event_trigger
@@ -4273,6 +4378,28 @@ export const Constants = {
 //   END;
 //   $function$
 //
+// FUNCTION trigger_notifica_status_proposta()
+//   CREATE OR REPLACE FUNCTION public.trigger_notifica_status_proposta()
+//    RETURNS trigger
+//    LANGUAGE plpgsql
+//    SECURITY DEFINER
+//   AS $function$
+//   DECLARE
+//       v_msg TEXT;
+//   BEGIN
+//       IF NEW.status IS DISTINCT FROM OLD.status AND NEW.status IN ('Aceita', 'Rejeitada', 'Visualizada') THEN
+//           v_msg := 'A proposta ' || COALESCE(NEW.numero_proposta, 'S/N') || ' foi marcada como ' || NEW.status || ' pelo cliente.';
+//           IF NEW.comentarios_cliente IS NOT NULL AND NEW.comentarios_cliente IS DISTINCT FROM OLD.comentarios_cliente THEN
+//               v_msg := v_msg || ' Comentário: ' || NEW.comentarios_cliente;
+//           END IF;
+//
+//           INSERT INTO public.notificacoes (usuario_id, titulo, mensagem)
+//           VALUES (NEW.responsavel_id, 'Atualização de Proposta', v_msg);
+//       END IF;
+//       RETURN NEW;
+//   END;
+//   $function$
+//
 // FUNCTION update_anamnese(uuid, jsonb)
 //   CREATE OR REPLACE FUNCTION public.update_anamnese(p_hash uuid, p_anamnese jsonb)
 //    RETURNS jsonb
@@ -4330,6 +4457,7 @@ export const Constants = {
 //   trg_generate_numero_proposta: CREATE TRIGGER trg_generate_numero_proposta BEFORE INSERT ON public.propostas FOR EACH ROW EXECUTE FUNCTION generate_numero_proposta()
 //   trg_log_proposta_creation: CREATE TRIGGER trg_log_proposta_creation AFTER INSERT ON public.propostas FOR EACH ROW EXECUTE FUNCTION log_proposta_creation()
 //   trg_log_proposta_status_change: CREATE TRIGGER trg_log_proposta_status_change AFTER UPDATE OF status ON public.propostas FOR EACH ROW EXECUTE FUNCTION log_proposta_status_change()
+//   trg_notifica_status_proposta: CREATE TRIGGER trg_notifica_status_proposta AFTER UPDATE OF status ON public.propostas FOR EACH ROW EXECUTE FUNCTION trigger_notifica_status_proposta()
 // Table: rotas_aereas
 //   set_rotas_aereas_updated_at: CREATE TRIGGER set_rotas_aereas_updated_at BEFORE UPDATE ON public.rotas_aereas FOR EACH ROW EXECUTE FUNCTION set_updated_at()
 // Table: testes_psicologicos

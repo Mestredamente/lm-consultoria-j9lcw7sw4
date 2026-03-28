@@ -40,6 +40,8 @@ export function AutomationDialog({
   const [descTarefa, setDescTarefa] = useState('')
   const [campoAtualizacao, setCampoAtualizacao] = useState('')
   const [valorAtualizacao, setValorAtualizacao] = useState('')
+  const [webhookUrl, setWebhookUrl] = useState('')
+  const [webhookPayload, setWebhookPayload] = useState('')
 
   const handleSave = () => {
     if (!nome || !gatilho || !acao) return
@@ -52,6 +54,8 @@ export function AutomationDialog({
       detalhes_acao = { titulo: tituloTarefa, descricao: descTarefa }
     } else if (acao === 'Atualizar Campo') {
       detalhes_acao = { campo: campoAtualizacao, valor: valorAtualizacao }
+    } else if (acao === 'Enviar Webhook') {
+      detalhes_acao = { url: webhookUrl, payload: webhookPayload }
     }
 
     const data = {
@@ -74,6 +78,8 @@ export function AutomationDialog({
     setDescTarefa('')
     setCampoAtualizacao('')
     setValorAtualizacao('')
+    setWebhookUrl('')
+    setWebhookPayload('')
   }
 
   return (
@@ -134,6 +140,9 @@ export function AutomationDialog({
                 <SelectItem value="Enviar Email">Enviar Email</SelectItem>
                 <SelectItem value="Criar Tarefa">Criar Tarefa</SelectItem>
                 <SelectItem value="Atualizar Campo">Atualizar Campo</SelectItem>
+                <SelectItem value="Enviar Webhook">
+                  Enviar Webhook / Slack
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -216,6 +225,29 @@ export function AutomationDialog({
                   onChange={(e) => setValorAtualizacao(e.target.value)}
                   placeholder="Ex: Qualificação"
                   className="bg-white"
+                />
+              </div>
+            </div>
+          )}
+
+          {acao === 'Enviar Webhook' && (
+            <div className="space-y-4 p-4 bg-gray-50/50 border border-gray-100 rounded-xl mt-2">
+              <div className="space-y-2">
+                <Label>URL do Webhook (Slack, Zapier, Make)</Label>
+                <Input
+                  value={webhookUrl}
+                  onChange={(e) => setWebhookUrl(e.target.value)}
+                  placeholder="https://hooks.slack.com/services/..."
+                  className="bg-white"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Payload (JSON Opcional)</Label>
+                <Textarea
+                  value={webhookPayload}
+                  onChange={(e) => setWebhookPayload(e.target.value)}
+                  placeholder='{"text": "Nova oportunidade: [Nome]"}'
+                  className="bg-white min-h-[100px] font-mono text-sm"
                 />
               </div>
             </div>
