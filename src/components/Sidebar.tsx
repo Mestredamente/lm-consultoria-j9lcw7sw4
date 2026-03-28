@@ -10,6 +10,8 @@ import {
   FileText,
   BarChart,
   Target,
+  FolderOpen,
+  Upload,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -28,6 +30,8 @@ const navItems = [
   { icon: Activity, label: 'Atividades', path: '/activities' },
   { icon: CheckSquare, label: 'Tarefas', path: '/tasks' },
   { icon: FileText, label: 'Propostas', path: '/proposals' },
+  { icon: FolderOpen, label: 'Documentos', path: '/documents' },
+  { icon: Upload, label: 'Importar', path: '/import' },
   { icon: BarChart, label: 'Relatórios', path: '/reports' },
 ]
 

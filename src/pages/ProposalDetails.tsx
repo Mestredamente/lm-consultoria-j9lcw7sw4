@@ -54,6 +54,7 @@ import {
 import { SendEmailModal } from '@/components/proposals/SendEmailModal'
 import { SendWhatsAppModal } from '@/components/proposals/SendWhatsAppModal'
 import { ProposalsVersions } from '@/components/proposals/ProposalsVersions'
+import { ProposalDocuments } from '@/components/proposals/ProposalDocuments'
 import { useAuth } from '@/hooks/use-auth'
 
 export default function ProposalDetails() {
@@ -400,6 +401,7 @@ export default function ProposalDetails() {
           <TabsTrigger value="custos">Custos ({costs.length})</TabsTrigger>
           <TabsTrigger value="historico">Histórico</TabsTrigger>
           <TabsTrigger value="versoes">Versões</TabsTrigger>
+          <TabsTrigger value="documentos">Documentos</TabsTrigger>
           <TabsTrigger value="notas">Notas Internas</TabsTrigger>
           <TabsTrigger value="emails">Emails ({emailsSent.length})</TabsTrigger>
           <TabsTrigger value="rastreamento">Rastreamento</TabsTrigger>
@@ -527,6 +529,14 @@ export default function ProposalDetails() {
           <Card>
             <CardContent className="p-6">
               <ProposalsVersions proposalId={id!} onSuccess={fetchDetails} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="documentos" className="mt-4">
+          <Card>
+            <CardContent className="p-6">
+              <ProposalDocuments proposalId={id!} />
             </CardContent>
           </Card>
         </TabsContent>

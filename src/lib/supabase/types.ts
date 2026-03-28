@@ -3281,7 +3281,7 @@ export const Constants = {
 //   FOREIGN KEY propostas_oportunidade_id_fkey: FOREIGN KEY (oportunidade_id) REFERENCES oportunidades(id) ON DELETE SET NULL
 //   PRIMARY KEY propostas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY propostas_responsavel_id_fkey: FOREIGN KEY (responsavel_id) REFERENCES usuarios(id) ON DELETE CASCADE
-//   CHECK propostas_status_check: CHECK ((status = ANY (ARRAY['Rascunho'::text, 'Enviada'::text, 'Visualizada'::text, 'Aceita'::text, 'Rejeitada'::text])))
+//   CHECK propostas_status_check: CHECK ((status = ANY (ARRAY['Rascunho'::text, 'Enviada'::text, 'Visualizada'::text, 'Aceita'::text, 'Rejeitada'::text, 'Enviada via WhatsApp'::text])))
 // Table: propostas_versoes
 //   PRIMARY KEY propostas_versoes_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY propostas_versoes_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE

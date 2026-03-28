@@ -26,6 +26,8 @@ import ProposalDetails from './pages/ProposalDetails'
 import PublicProposalView from './pages/PublicProposalView'
 import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
+import DocumentsGallery from './pages/Documents'
+import ImportData from './pages/ImportData'
 import Auth from './pages/Auth'
 import { AuthProvider, useAuth } from './hooks/use-auth'
 import { CompaniesProvider } from './contexts/CompaniesContext'
@@ -129,6 +131,8 @@ const App = () => (
                         element={<ProposalsDashboard />}
                       />
                       <Route path="/reports/funnel" element={<Reports />} />
+                      <Route path="/documents" element={<DocumentsGallery />} />
+                      <Route path="/import" element={<ImportData />} />
                       <Route
                         path="/founders"
                         element={<PlaceholderPage title="Fundadores" />}
