@@ -14,7 +14,19 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, Edit, Trash, Mail, FileText, Clock } from 'lucide-react'
+import {
+  ArrowLeft,
+  Edit,
+  Trash,
+  Mail,
+  FileText,
+  Clock,
+  PlusCircle,
+  Send,
+  Eye,
+  CheckCircle,
+  XCircle,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import {
   calcularCustosProposal,
@@ -34,6 +46,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { SendEmailModal } from '@/components/proposals/SendEmailModal'
 
 export default function ProposalDetails() {
   const { id } = useParams()
@@ -46,6 +59,8 @@ export default function ProposalDetails() {
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isEmailOpen, setIsEmailOpen] = useState(false)
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false)
 
   const fetchDetails = async () => {
     try {
@@ -129,6 +144,40 @@ export default function ProposalDetails() {
   const mc = (m: number) =>
     m > 35 ? 'text-green-600' : m >= 20 ? 'text-yellow-600' : 'text-red-600'
 
+  const handleGeneratePdf = async () => {
+    setIsGeneratingPdf(true)
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        'gerar-pdf-proposta',
+        {
+          body: { proposta_id: id },
+        },
+      )
+      if (error) throw error
+      if (data?.url) {
+        window.open(data.url, '_blank')
+        toast.success('PDF gerado com sucesso!')
+      }
+    } catch (err: any) {
+      toast.error('Erro ao gerar PDF: ' + err.message)
+    } finally {
+      setIsGeneratingPdf(false)
+    }
+  }
+
+  const getActionIcon = (acao: string) => {
+    if (acao === 'Criada')
+      return <PlusCircle className="h-5 w-5 text-blue-500" />
+    if (acao === 'Enviada') return <Send className="h-5 w-5 text-primary" />
+    if (acao === 'Visualizada')
+      return <Eye className="h-5 w-5 text-purple-500" />
+    if (acao === 'Aceita')
+      return <CheckCircle className="h-5 w-5 text-green-500" />
+    if (acao === 'Rejeitada')
+      return <XCircle className="h-5 w-5 text-red-500" />
+    return <Clock className="h-5 w-5 text-gray-500" />
+  }
+
   if (loading)
     return (
       <div className="p-8 flex justify-center">
@@ -179,11 +228,21 @@ export default function ProposalDetails() {
           >
             <Edit className="w-4 h-4 mr-2" /> Editar
           </Button>
-          <Button variant="outline" size="sm">
-            <Mail className="w-4 h-4 mr-2" /> Enviar
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEmailOpen(true)}
+          >
+            <Mail className="w-4 h-4 mr-2" /> Enviar por Email
           </Button>
-          <Button variant="outline" size="sm">
-            <FileText className="w-4 h-4 mr-2" /> PDF
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleGeneratePdf}
+            disabled={isGeneratingPdf}
+          >
+            <FileText className="w-4 h-4 mr-2" />{' '}
+            {isGeneratingPdf ? 'Gerando...' : 'Gerar PDF'}
           </Button>
           <Button
             variant="destructive"
@@ -327,25 +386,30 @@ export default function ProposalDetails() {
 
         <TabsContent value="historico" className="mt-4">
           <Card>
-            <CardContent className="p-6 space-y-4">
-              {history.map((h) => (
-                <div key={h.id} className="flex gap-4 items-start">
-                  <div className="mt-1 bg-primary/10 p-2 rounded-full">
-                    <Clock className="h-4 w-4 text-primary" />
+            <CardContent className="p-6">
+              <div className="relative border-l-2 border-gray-100 ml-4 space-y-8 py-4">
+                {history.map((h, i) => (
+                  <div key={h.id} className="relative pl-8">
+                    <div className="absolute -left-[17px] top-1 bg-white p-1 rounded-full border border-gray-100 shadow-sm">
+                      {getActionIcon(h.acao)}
+                    </div>
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        Proposta {h.acao}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {new Date(h.data_acao).toLocaleString('pt-BR')}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      Proposta {h.acao}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(h.data_acao).toLocaleString('pt-BR')}
-                    </p>
-                  </div>
-                </div>
-              ))}
-              {history.length === 0 && (
-                <p className="text-gray-500">Sem histórico.</p>
-              )}
+                ))}
+                {history.length === 0 && (
+                  <p className="text-gray-500 pl-4">
+                    Nenhum evento registrado.
+                  </p>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -369,6 +433,14 @@ export default function ProposalDetails() {
         onOpenChange={setIsEditOpen}
         onSuccess={fetchDetails}
         proposalId={id}
+      />
+
+      <SendEmailModal
+        open={isEmailOpen}
+        onOpenChange={setIsEmailOpen}
+        proposalId={id}
+        defaultEmail={proposal.contatos?.email}
+        onSuccess={fetchDetails}
       />
 
       <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>

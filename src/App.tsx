@@ -30,6 +30,7 @@ import { CompaniesProvider } from './contexts/CompaniesContext'
 import { ContactsProvider } from './contexts/ContactsContext'
 import { OportunidadesProvider } from './contexts/OportunidadesContext'
 import { ActivitiesProvider } from './contexts/ActivitiesContext'
+import Dashboard from './pages/Index'
 
 function ProtectedRoute({ allowedRoles }: { allowedRoles?: string[] }) {
   const { user, loading, role } = useAuth()
@@ -64,7 +65,7 @@ const App = () => (
                   <Route path="/auth" element={<Auth />} />
                   <Route element={<ProtectedRoute />}>
                     <Route element={<Layout />}>
-                      <Route path="/" element={<Index />} />
+                      <Route path="/" element={<Dashboard />} />
                       <Route path="/leads" element={<Leads />} />
                       <Route
                         path="/leads/:id"
