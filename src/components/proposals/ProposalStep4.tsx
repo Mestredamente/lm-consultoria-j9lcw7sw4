@@ -104,13 +104,20 @@ export function ProposalStep4({
     </div>
   )
 
-  return (
   const handleAiOptimization = async () => {
     setAiLoading(true)
     try {
-      const { data, error } = await supabase.functions.invoke('gerar-precificacao-ia', {
-        body: { services, costs, margem_atual: margem, valor_total: summary.valor_final_liquido }
-      })
+      const { data, error } = await supabase.functions.invoke(
+        'gerar-precificacao-ia',
+        {
+          body: {
+            services,
+            costs,
+            margem_atual: margem,
+            valor_total: summary.valor_final_liquido,
+          },
+        },
+      )
       if (error) throw error
       setAiSuggestion(data.sugestao)
       if (data.sugestao_margem) {
@@ -118,7 +125,9 @@ export function ProposalStep4({
       }
     } catch (err) {
       console.error(err)
-      setAiSuggestion("Aumente a margem de serviços para 45%. O mercado absorve bem este ticket para o perfil atual.")
+      setAiSuggestion(
+        'Aumente a margem de serviços para 45%. O mercado absorve bem este ticket para o perfil atual.',
+      )
       setMargem(45)
     } finally {
       setAiLoading(false)
@@ -184,20 +193,26 @@ export function ProposalStep4({
 
           <div className="space-y-4 pt-4 border-t">
             <div className="flex flex-col gap-2">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100 hover:text-indigo-800"
                 onClick={handleAiOptimization}
                 disabled={aiLoading}
               >
-                {aiLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Sparkles className="w-4 h-4 mr-2" />}
+                {aiLoading ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 mr-2" />
+                )}
                 Otimizar Precificação com IA
               </Button>
               {aiSuggestion && (
                 <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mt-2">
                   <div className="flex items-center gap-2 mb-1">
                     <Sparkles className="h-4 w-4 text-indigo-600" />
-                    <h5 className="text-sm font-semibold text-indigo-900">Sugestão Estratégica</h5>
+                    <h5 className="text-sm font-semibold text-indigo-900">
+                      Sugestão Estratégica
+                    </h5>
                   </div>
                   <p className="text-sm text-indigo-800 leading-relaxed ml-6">
                     {aiSuggestion}
