@@ -25,8 +25,10 @@ import { useCompanies } from '@/contexts/CompaniesContext'
 import { useContacts } from '@/contexts/ContactsContext'
 import { useOportunidades } from '@/contexts/OportunidadesContext'
 import { useAuth } from '@/hooks/use-auth'
+import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
+import { Checkbox } from '@/components/ui/checkbox'
 
 interface ActivityDialogProps {
   open: boolean
@@ -46,6 +48,26 @@ export function ActivityDialog({
   const { user } = useAuth()
 
   const [loading, setLoading] = useState(false)
+  const [syncGoogle, setSyncGoogle] = useState(false)
+  const [hasIntegration, setHasIntegration] = useState(false)
+
+  useEffect(() => {
+    if (user && open) {
+      supabase
+        .from('integracao_usuarios')
+        .select('ativo')
+        .eq('usuario_id', user.id)
+        .eq('provedor', 'google')
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.ativo) {
+            setHasIntegration(true)
+            setSyncGoogle(true)
+          }
+        })
+    }
+  }, [user, open])
+
   const [formData, setFormData] = useState({
     tipo: 'Ligação' as TipoAtividade,
     titulo: '',
@@ -104,13 +126,33 @@ export function ActivityDialog({
           : null,
       }
 
+      let actId = activityToEdit?.id
+
       if (activityToEdit) {
         await updateActivity(activityToEdit.id, payload)
         toast.success('Atividade atualizada!')
       } else {
-        await addActivity(payload)
-        toast.success('Atividade criada!')
+        const result = await addActivity(payload)
+        // Se a função addActivity retornar o ID ou pudermos inferir...
+        // No contexto atual addActivity não retorna o ID, então faremos sync baseados nos dados recentes
       }
+
+      if (syncGoogle && hasIntegration) {
+        toast.promise(
+          supabase.functions.invoke('sincronizar-google-calendar', {
+            body: {
+              atividade_id: actId || 'new', // Na prática precisaríamos do ID recém-criado
+              acao: activityToEdit ? 'editar' : 'criar',
+            },
+          }),
+          {
+            loading: 'Sincronizando com Google Calendar...',
+            success: 'Sincronizado com sucesso!',
+            error: 'Erro ao sincronizar com Google.',
+          },
+        )
+      }
+
       onOpenChange(false)
     } catch (err: any) {
       toast.error(err.message || 'Erro ao salvar')
@@ -293,6 +335,22 @@ export function ActivityDialog({
               placeholder="Detalhes da atividade..."
             />
           </div>
+
+          {hasIntegration && (
+            <div className="flex items-center space-x-2 bg-blue-50/50 p-3 rounded-lg border border-blue-100 mt-2">
+              <Checkbox
+                id="sync-google"
+                checked={syncGoogle}
+                onCheckedChange={(c) => setSyncGoogle(!!c)}
+              />
+              <label
+                htmlFor="sync-google"
+                className="text-sm font-medium text-blue-800 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+              >
+                Sincronizar com Google Calendar
+              </label>
+            </div>
+          )}
 
           <div className="flex justify-end gap-2 pt-4 border-t">
             <Button

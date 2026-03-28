@@ -27,9 +27,17 @@ import { useAuth } from '@/hooks/use-auth'
 
 const integrationsList = [
   {
+    id: 'google_calendar',
+    name: 'Google Calendar',
+    desc: 'Sincronize atividades e eventos do Google Agenda bidirecionalmente.',
+    icon: Calendar,
+    hasConfig: false,
+    isOAuth: true,
+  },
+  {
     id: 'google',
     name: 'Google Workspace',
-    desc: 'Sincronize e-mails e eventos do Google Agenda diretamente no seu CRM.',
+    desc: 'Sincronize e-mails do Google diretamente no seu CRM.',
     icon: Mail,
     hasConfig: false,
   },
@@ -67,6 +75,7 @@ export function IntegrationsSettings() {
   const { user } = useAuth()
   const [activeInts, setActiveInts] = useState<Record<string, boolean>>({
     whatsapp: false,
+    google_calendar: false,
   })
   const [configOpen, setConfigOpen] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -84,41 +93,102 @@ export function IntegrationsSettings() {
 
   const fetchSettings = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('usuarios')
-      .select(
-        'whatsapp_api_key, whatsapp_business_phone_id, whatsapp_business_account_id',
-      )
-      .eq('id', user?.id)
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select(
+          'whatsapp_api_key, whatsapp_business_phone_id, whatsapp_business_account_id',
+        )
+        .eq('id', user?.id)
+        .single()
 
-    if (data) {
-      setWaData({
-        whatsapp_api_key: data.whatsapp_api_key || '',
-        whatsapp_business_phone_id: data.whatsapp_business_phone_id || '',
-        whatsapp_business_account_id: data.whatsapp_business_account_id || '',
-      })
-      setActiveInts((prev) => ({
-        ...prev,
-        whatsapp: !!data.whatsapp_api_key,
-      }))
+      if (data) {
+        setWaData({
+          whatsapp_api_key: data.whatsapp_api_key || '',
+          whatsapp_business_phone_id: data.whatsapp_business_phone_id || '',
+          whatsapp_business_account_id: data.whatsapp_business_account_id || '',
+        })
+        setActiveInts((prev) => ({
+          ...prev,
+          whatsapp: !!data.whatsapp_api_key,
+        }))
+      }
+
+      const { data: integ } = await supabase
+        .from('integracao_usuarios')
+        .select('*')
+        .eq('usuario_id', user?.id)
+        .eq('provedor', 'google')
+        .maybeSingle()
+
+      if (integ && integ.ativo) {
+        setActiveInts((p) => ({ ...p, google_calendar: true }))
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
-  const handleToggle = (id: string, name: string, current: boolean) => {
+  const handleToggle = async (id: string, name: string, current: boolean) => {
     if (!current) {
       if (id === 'whatsapp') {
         setConfigOpen('whatsapp')
+      } else if (id === 'google_calendar') {
+        handleGoogleAuth()
       } else {
         toast.info(`A integração com ${name} estará disponível em breve.`)
       }
     } else {
       if (id === 'whatsapp') {
         handleSaveWaSettings(true)
+      } else if (id === 'google_calendar') {
+        handleGoogleDisconnect()
       } else {
         toast.success(`${name} desconectado.`)
       }
+    }
+  }
+
+  const handleGoogleAuth = async () => {
+    // Simulating OAuth flow as requested
+    setLoading(true)
+    setTimeout(async () => {
+      try {
+        await supabase.from('integracao_usuarios').upsert(
+          {
+            usuario_id: user?.id,
+            provedor: 'google',
+            access_token: 'mock_access_token',
+            refresh_token: 'mock_refresh_token',
+            ativo: true,
+          },
+          { onConflict: 'usuario_id, provedor' },
+        )
+
+        setActiveInts((p) => ({ ...p, google_calendar: true }))
+        toast.success('Google Calendar conectado com sucesso!')
+      } catch (err: any) {
+        toast.error('Erro ao conectar Google: ' + err.message)
+      } finally {
+        setLoading(false)
+      }
+    }, 1000)
+  }
+
+  const handleGoogleDisconnect = async () => {
+    try {
+      await supabase
+        .from('integracao_usuarios')
+        .delete()
+        .eq('usuario_id', user?.id)
+        .eq('provedor', 'google')
+
+      setActiveInts((p) => ({ ...p, google_calendar: false }))
+      toast.success('Google Calendar desconectado.')
+    } catch (err: any) {
+      toast.error('Erro ao desconectar: ' + err.message)
     }
   }
 

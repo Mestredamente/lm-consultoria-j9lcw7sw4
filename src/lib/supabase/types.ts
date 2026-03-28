@@ -632,6 +632,50 @@ export type Database = {
           },
         ]
       }
+      documentos: {
+        Row: {
+          caminho_storage: string
+          created_at: string
+          data_upload: string
+          id: string
+          nome_arquivo: string
+          proposta_id: string | null
+          tamanho_bytes: number
+          tipo: string
+          usuario_id: string
+        }
+        Insert: {
+          caminho_storage: string
+          created_at?: string
+          data_upload?: string
+          id?: string
+          nome_arquivo: string
+          proposta_id?: string | null
+          tamanho_bytes: number
+          tipo: string
+          usuario_id: string
+        }
+        Update: {
+          caminho_storage?: string
+          created_at?: string
+          data_upload?: string
+          id?: string
+          nome_arquivo?: string
+          proposta_id?: string | null
+          tamanho_bytes?: number
+          tipo?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'documentos_proposta_id_fkey'
+            columns: ['proposta_id']
+            isOneToOne: false
+            referencedRelation: 'propostas'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       emails_automacao: {
         Row: {
           assunto: string
@@ -2730,6 +2774,16 @@ export const Constants = {
 //   data: date (not null)
 //   categoria: text (nullable)
 //   created_at: timestamp with time zone (not null, default: now())
+// Table: documentos
+//   id: uuid (not null, default: gen_random_uuid())
+//   proposta_id: uuid (nullable)
+//   tipo: text (not null)
+//   nome_arquivo: text (not null)
+//   caminho_storage: text (not null)
+//   tamanho_bytes: bigint (not null)
+//   data_upload: timestamp with time zone (not null, default: now())
+//   usuario_id: uuid (not null)
+//   created_at: timestamp with time zone (not null, default: now())
 // Table: emails_automacao
 //   id: uuid (not null, default: gen_random_uuid())
 //   usuario_id: uuid (not null)
@@ -3169,6 +3223,10 @@ export const Constants = {
 // Table: despesas
 //   PRIMARY KEY despesas_pkey: PRIMARY KEY (id)
 //   FOREIGN KEY despesas_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE
+// Table: documentos
+//   PRIMARY KEY documentos_pkey: PRIMARY KEY (id)
+//   FOREIGN KEY documentos_proposta_id_fkey: FOREIGN KEY (proposta_id) REFERENCES propostas(id) ON DELETE CASCADE
+//   FOREIGN KEY documentos_usuario_id_fkey: FOREIGN KEY (usuario_id) REFERENCES auth.users(id) ON DELETE CASCADE
 // Table: emails_automacao
 //   FOREIGN KEY emails_automacao_fluxo_id_fkey: FOREIGN KEY (fluxo_id) REFERENCES fluxos_automacao(id) ON DELETE CASCADE
 //   PRIMARY KEY emails_automacao_pkey: PRIMARY KEY (id)
@@ -3387,6 +3445,10 @@ export const Constants = {
 //     WITH CHECK: (EXISTS ( SELECT 1    FROM propostas p   WHERE ((p.id = custos_operacionais.proposta_id) AND (p.responsavel_id = auth.uid()))))
 // Table: despesas
 //   Policy "despesas_policy" (ALL, PERMISSIVE) roles={authenticated}
+//     USING: (usuario_id = auth.uid())
+//     WITH CHECK: (usuario_id = auth.uid())
+// Table: documentos
+//   Policy "documentos_policy" (ALL, PERMISSIVE) roles={authenticated}
 //     USING: (usuario_id = auth.uid())
 //     WITH CHECK: (usuario_id = auth.uid())
 // Table: emails_automacao

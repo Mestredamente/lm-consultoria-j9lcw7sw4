@@ -28,6 +28,7 @@ import NotFound from './pages/NotFound'
 import Layout from './components/Layout'
 import DocumentsGallery from './pages/Documents'
 import ImportData from './pages/ImportData'
+import Insights from './pages/Insights'
 import Auth from './pages/Auth'
 import { AuthProvider, useAuth } from './hooks/use-auth'
 import { CompaniesProvider } from './contexts/CompaniesContext'
@@ -131,6 +132,7 @@ const App = () => (
                         element={<ProposalsDashboard />}
                       />
                       <Route path="/reports/funnel" element={<Reports />} />
+                      <Route path="/insights" element={<Insights />} />
                       <Route path="/documents" element={<DocumentsGallery />} />
                       <Route path="/import" element={<ImportData />} />
                       <Route
