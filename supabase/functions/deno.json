@@ -16,7 +16,7 @@
     "stripe_webhook": 2,
     "gerar_link_sala_virtual": 4,
     "enviar_mensagem_whatsapp": 8,
-    "executar_automacao": 4,
+    "executar_automacao": 5,
     "gerar-pdf-proposta": 1,
     "enviar-proposta-email": 1,
     "rastrear-visualizacao-proposta": 1,
