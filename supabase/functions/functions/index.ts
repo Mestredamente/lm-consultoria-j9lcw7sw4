@@ -6,7 +6,10 @@ Deno.serve(async (req: Request) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  return new Response(JSON.stringify({ message: 'Function executed successfully' }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  })
+  return new Response(
+    JSON.stringify({ message: 'Function executed successfully' }),
+    {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    },
+  )
 })
