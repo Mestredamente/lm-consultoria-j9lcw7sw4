@@ -104,6 +104,73 @@ export function ActivitiesProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchActivities])
 
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('public:atividades')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'atividades' },
+        (payload) => {
+          if (
+            role === 'vendedor' &&
+            payload.new &&
+            payload.new.responsavel_id !== user.id
+          )
+            return
+
+          if (payload.eventType === 'INSERT') {
+            setActivities((prev) => {
+              if (prev.some((a) => a.id === payload.new.id)) return prev
+              return [...prev, payload.new as Atividade]
+            })
+            setTimeout(() => {
+              setActivities((prev) =>
+                [...prev].sort((a, b) => {
+                  const dateA = a.data_agendada
+                    ? new Date(a.data_agendada).getTime()
+                    : Infinity
+                  const dateB = b.data_agendada
+                    ? new Date(b.data_agendada).getTime()
+                    : Infinity
+                  return dateA - dateB
+                }),
+              )
+            }, 0)
+          } else if (payload.eventType === 'UPDATE') {
+            setActivities((prev) =>
+              prev.map((a) =>
+                a.id === payload.new.id
+                  ? ({ ...a, ...payload.new } as Atividade)
+                  : a,
+              ),
+            )
+            setTimeout(() => {
+              setActivities((prev) =>
+                [...prev].sort((a, b) => {
+                  const dateA = a.data_agendada
+                    ? new Date(a.data_agendada).getTime()
+                    : Infinity
+                  const dateB = b.data_agendada
+                    ? new Date(b.data_agendada).getTime()
+                    : Infinity
+                  return dateA - dateB
+                }),
+              )
+            }, 0)
+          } else if (payload.eventType === 'DELETE') {
+            setActivities((prev) => prev.filter((a) => a.id !== payload.old.id))
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, role])
+
   const addActivity = async (activity: Omit<Atividade, 'id'>) => {
     const { data, error: err } = await supabase
       .from('atividades')

@@ -96,6 +96,71 @@ export function CompaniesProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchCompanies])
 
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('public:empresas')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'empresas' },
+        (payload) => {
+          if (
+            role === 'vendedor' &&
+            payload.new &&
+            payload.new.usuario_id !== user.id
+          )
+            return
+
+          if (payload.eventType === 'INSERT') {
+            setCompanies((prev) => {
+              if (prev.some((c) => c.id === payload.new.id)) return prev
+              return [
+                {
+                  id: payload.new.id,
+                  name: payload.new.nome,
+                  cnpj: payload.new.cnpj || '',
+                  industry: payload.new.setor || '',
+                  address: payload.new.endereco || '',
+                  website: payload.new.website || '',
+                  employees: payload.new.num_funcionarios || 0,
+                  email: payload.new.email || '',
+                  phone: payload.new.telefone || '',
+                  createdAt: payload.new.created_at || new Date().toISOString(),
+                },
+                ...prev,
+              ]
+            })
+          } else if (payload.eventType === 'UPDATE') {
+            setCompanies((prev) =>
+              prev.map((c) =>
+                c.id === payload.new.id
+                  ? {
+                      ...c,
+                      name: payload.new.nome,
+                      cnpj: payload.new.cnpj || '',
+                      industry: payload.new.setor || '',
+                      address: payload.new.endereco || '',
+                      website: payload.new.website || '',
+                      employees: payload.new.num_funcionarios || 0,
+                      email: payload.new.email || '',
+                      phone: payload.new.telefone || '',
+                    }
+                  : c,
+              ),
+            )
+          } else if (payload.eventType === 'DELETE') {
+            setCompanies((prev) => prev.filter((c) => c.id !== payload.old.id))
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, role])
+
   const addCompany = async (companyData: Omit<Company, 'id' | 'createdAt'>) => {
     if (!user) throw new Error('Usuário não autenticado')
 

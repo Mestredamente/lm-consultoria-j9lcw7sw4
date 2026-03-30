@@ -94,6 +94,69 @@ export function ContactsProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchContacts])
 
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('public:contatos')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'contatos' },
+        (payload) => {
+          if (
+            role === 'vendedor' &&
+            payload.new &&
+            payload.new.usuario_id !== user.id
+          )
+            return
+
+          if (payload.eventType === 'INSERT') {
+            setContacts((prev) => {
+              if (prev.some((c) => c.id === payload.new.id)) return prev
+              return [
+                {
+                  id: payload.new.id,
+                  name: payload.new.nome,
+                  position: payload.new.cargo || '',
+                  email: payload.new.email || '',
+                  phone: payload.new.telefone || '',
+                  companyId: payload.new.empresa_id || '',
+                  linkedin: payload.new.linkedin || '',
+                  notes: payload.new.notas || '',
+                  createdAt: payload.new.created_at || new Date().toISOString(),
+                },
+                ...prev,
+              ]
+            })
+          } else if (payload.eventType === 'UPDATE') {
+            setContacts((prev) =>
+              prev.map((c) =>
+                c.id === payload.new.id
+                  ? {
+                      ...c,
+                      name: payload.new.nome,
+                      position: payload.new.cargo || '',
+                      email: payload.new.email || '',
+                      phone: payload.new.telefone || '',
+                      companyId: payload.new.empresa_id || '',
+                      linkedin: payload.new.linkedin || '',
+                      notes: payload.new.notas || '',
+                    }
+                  : c,
+              ),
+            )
+          } else if (payload.eventType === 'DELETE') {
+            setContacts((prev) => prev.filter((c) => c.id !== payload.old.id))
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, role])
+
   const addContact = async (contactData: Omit<Contact, 'id' | 'createdAt'>) => {
     if (!user) throw new Error('Usuário não autenticado')
 

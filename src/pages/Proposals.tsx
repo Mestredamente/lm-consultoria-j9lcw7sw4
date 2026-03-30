@@ -101,6 +101,53 @@ export default function Proposals() {
     }
   }, [user])
 
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('public:propostas')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'propostas' },
+        (payload) => {
+          if (payload.eventType === 'DELETE') {
+            setPropostas((prev) => prev.filter((p) => p.id !== payload.old.id))
+          } else {
+            setPropostas((prev) => {
+              if (payload.eventType === 'INSERT') {
+                if (prev.some((p) => p.id === payload.new.id)) return prev
+                return [payload.new as any, ...prev]
+              } else {
+                return prev.map((p) =>
+                  p.id === payload.new.id ? { ...p, ...payload.new } : p,
+                )
+              }
+            })
+
+            setTimeout(() => {
+              supabase
+                .from('propostas')
+                .select('*, empresas (nome), contatos (nome), usuarios (nome)')
+                .eq('id', payload.new.id)
+                .single()
+                .then(({ data, error }) => {
+                  if (data && !error) {
+                    setPropostas((prev) =>
+                      prev.map((p) => (p.id === data.id ? (data as any) : p)),
+                    )
+                  }
+                })
+            }, 0)
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
   const fetchPropostas = async () => {
     try {
       setLoading(true)

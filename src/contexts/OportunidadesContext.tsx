@@ -89,6 +89,62 @@ export function OportunidadesProvider({ children }: { children: ReactNode }) {
     }
   }, [user, fetchOportunidades])
 
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('public:oportunidades')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'oportunidades' },
+        (payload) => {
+          if (
+            role === 'vendedor' &&
+            payload.new &&
+            payload.new.responsavel_id !== user.id
+          )
+            return
+
+          if (payload.eventType === 'DELETE') {
+            setOportunidades((prev) =>
+              prev.filter((o) => o.id !== payload.old.id),
+            )
+          } else {
+            setOportunidades((prev) => {
+              if (payload.eventType === 'INSERT') {
+                if (prev.some((o) => o.id === payload.new.id)) return prev
+                return [payload.new as any, ...prev]
+              } else {
+                return prev.map((o) =>
+                  o.id === payload.new.id ? { ...o, ...payload.new } : o,
+                )
+              }
+            })
+
+            setTimeout(() => {
+              supabase
+                .from('oportunidades')
+                .select('*, empresas (nome), contatos (nome)')
+                .eq('id', payload.new.id)
+                .single()
+                .then(({ data, error }) => {
+                  if (data && !error) {
+                    setOportunidades((prev) =>
+                      prev.map((o) => (o.id === data.id ? (data as any) : o)),
+                    )
+                  }
+                })
+            }, 0)
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user, role])
+
   const addOportunidade = async (data: Partial<Oportunidade>) => {
     if (!user) throw new Error('Usuário não autenticado')
     const { data: novaOportunidade, error: err } = await supabase
