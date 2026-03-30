@@ -61,6 +61,75 @@ export function useAutomations() {
     fetchLogs()
   }, [fetchAutomations, fetchLogs])
 
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('public:automacoes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'fluxos_automacao' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setAutomations((prev) => {
+              if (prev.some((a) => a.id === payload.new.id)) return prev
+              return [payload.new as FluxoAutomacao, ...prev]
+            })
+          } else if (payload.eventType === 'UPDATE') {
+            setAutomations((prev) =>
+              prev.map((a) =>
+                a.id === payload.new.id ? { ...a, ...payload.new } : a,
+              ),
+            )
+          } else if (payload.eventType === 'DELETE') {
+            setAutomations((prev) =>
+              prev.filter((a) => a.id !== payload.old.id),
+            )
+          }
+        },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'logs_execucao_automacao' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setLogs((prev) => {
+              if (prev.some((l) => l.id === payload.new.id)) return prev
+              return [payload.new as any, ...prev]
+            })
+
+            setTimeout(() => {
+              supabase
+                .from('logs_execucao_automacao')
+                .select('*, fluxos_automacao(nome)')
+                .eq('id', payload.new.id)
+                .single()
+                .then(({ data }) => {
+                  if (data) {
+                    setLogs((prev) =>
+                      prev.map((l) => (l.id === data.id ? (data as any) : l)),
+                    )
+                  }
+                })
+            }, 0)
+          } else if (payload.eventType === 'UPDATE') {
+            setLogs((prev) =>
+              prev.map((l) =>
+                l.id === payload.new.id ? { ...l, ...payload.new } : l,
+              ),
+            )
+          } else if (payload.eventType === 'DELETE') {
+            setLogs((prev) => prev.filter((l) => l.id !== payload.old.id))
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
+
   const addAutomation = async (automation: Partial<FluxoAutomacao>) => {
     if (!user) return { error: 'Not authenticated' }
     const { data, error } = await supabase

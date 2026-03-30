@@ -15,7 +15,7 @@ Deno.serve(async (req) => {
         global: {
           headers: { Authorization: req.headers.get('Authorization')! },
         },
-      }
+      },
     )
 
     const { agendamento_id } = await req.json()
@@ -41,7 +41,8 @@ Deno.serve(async (req) => {
 
     // Gerar token único e construir link
     const tokenUnico = crypto.randomUUID()
-    const origin = req.headers.get('origin') || 'https://gestaodeconsultorio.goskip.app'
+    const origin =
+      req.headers.get('origin') || 'https://gestaodeconsultorio.goskip.app'
     const linkSeguro = `${origin}/sala-virtual/${agendamento_id}/${tokenUnico}`
 
     // Atualizar registro no banco
@@ -59,10 +60,13 @@ Deno.serve(async (req) => {
       throw new Error('Erro ao salvar o link seguro no banco de dados')
     }
 
-    return new Response(JSON.stringify({ link: linkSeguro, validFrom, expiresAt }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    })
+    return new Response(
+      JSON.stringify({ link: linkSeguro, validFrom, expiresAt }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      },
+    )
   } catch (error: any) {
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

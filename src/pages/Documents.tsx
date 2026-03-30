@@ -24,6 +24,7 @@ import { toast } from 'sonner'
 import { useAuth } from '@/hooks/use-auth'
 
 export default function DocumentsGallery() {
+  const { user } = useAuth()
   const [documents, setDocuments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -58,6 +59,53 @@ export default function DocumentsGallery() {
   useEffect(() => {
     fetchDocs()
   }, [filterType, searchTerm])
+
+  useEffect(() => {
+    if (!user) return
+
+    const channel = supabase
+      .channel('public:documentos')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'documentos' },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setDocuments((prev) => {
+              if (prev.some((d) => d.id === payload.new.id)) return prev
+              return [payload.new, ...prev]
+            })
+
+            setTimeout(() => {
+              supabase
+                .from('documentos')
+                .select('*, propostas(numero_proposta)')
+                .eq('id', payload.new.id)
+                .single()
+                .then(({ data }) => {
+                  if (data) {
+                    setDocuments((prev) =>
+                      prev.map((d) => (d.id === data.id ? data : d)),
+                    )
+                  }
+                })
+            }, 0)
+          } else if (payload.eventType === 'UPDATE') {
+            setDocuments((prev) =>
+              prev.map((d) =>
+                d.id === payload.new.id ? { ...d, ...payload.new } : d,
+              ),
+            )
+          } else if (payload.eventType === 'DELETE') {
+            setDocuments((prev) => prev.filter((d) => d.id !== payload.old.id))
+          }
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [user])
 
   const handleDownload = async (doc: any) => {
     try {
