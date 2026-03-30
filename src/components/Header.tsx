@@ -44,7 +44,7 @@ export function Header() {
                   : 'text-muted-foreground',
               )}
             >
-              {link.name}
+              <span translate="no">{link.name}</span>
             </Link>
           ))}
         </nav>

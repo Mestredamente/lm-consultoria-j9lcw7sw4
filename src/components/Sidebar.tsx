@@ -77,7 +77,7 @@ export function Sidebar() {
               side="right"
               className="bg-black text-white border-0 ml-2"
             >
-              <p>{item.label}</p>
+              <p translate="no">{item.label}</p>
             </TooltipContent>
           </Tooltip>
         )

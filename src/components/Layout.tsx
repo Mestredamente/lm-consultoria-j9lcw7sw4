@@ -211,7 +211,7 @@ export default function Layout() {
                       isActive ? 'text-white' : 'text-gray-500',
                     )}
                   />
-                  {item.name}
+                  <span translate="no">{item.name}</span>
                 </Link>
               )
             })}
@@ -272,7 +272,10 @@ export default function Layout() {
             )}
 
             {isMobile && location.pathname !== '/' && (
-              <span className="font-semibold text-gray-900 line-clamp-1">
+              <span
+                className="font-semibold text-gray-900 line-clamp-1"
+                translate="no"
+              >
                 {currentPageName}
               </span>
             )}
@@ -389,7 +392,10 @@ export default function Layout() {
                 <item.icon
                   className={cn('w-6 h-6', isActive && 'fill-black/10')}
                 />
-                <span className="text-[10px] font-medium leading-none">
+                <span
+                  className="text-[10px] font-medium leading-none"
+                  translate="no"
+                >
                   {item.name}
                 </span>
               </Link>
@@ -425,7 +431,7 @@ export default function Layout() {
                         isActive ? 'text-white' : 'text-gray-500',
                       )}
                     />
-                    {item.name}
+                    <span translate="no">{item.name}</span>
                   </Link>
                 )
               })}

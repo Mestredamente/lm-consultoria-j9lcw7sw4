@@ -91,7 +91,7 @@ export default function OportunidadesKanban() {
     <div className="flex flex-col h-[calc(100vh-100px)]">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-3xl font-bold text-gray-900" translate="no">
             Pipeline de Vendas
           </h1>
           <p className="text-muted-foreground">
@@ -134,7 +134,9 @@ export default function OportunidadesKanban() {
                 className="w-[320px] flex-shrink-0 bg-gray-50/80 rounded-2xl p-4 flex flex-col gap-3 h-full border border-gray-200/60 transition-colors"
               >
                 <div className="font-semibold text-gray-700 flex items-center justify-between mb-1 px-1">
-                  <span className="text-[15px]">{estagio}</span>
+                  <span className="text-[15px]" translate="no">
+                    {estagio}
+                  </span>
                   <span className="text-xs font-medium bg-white px-2.5 py-1 rounded-full text-gray-500 shadow-sm border border-gray-100">
                     {oportunidadesDaColuna.length}
                   </span>
