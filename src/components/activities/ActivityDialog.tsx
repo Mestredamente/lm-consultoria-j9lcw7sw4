@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -29,6 +29,8 @@ import { supabase } from '@/lib/supabase/client'
 import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { Checkbox } from '@/components/ui/checkbox'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { Loader2 } from 'lucide-react'
 
 interface ActivityDialogProps {
   open: boolean
@@ -46,6 +48,7 @@ export function ActivityDialog({
   const { contacts } = useContacts()
   const { oportunidades } = useOportunidades()
   const { user } = useAuth()
+  const isMobile = useIsMobile()
 
   const [loading, setLoading] = useState(false)
   const [syncGoogle, setSyncGoogle] = useState(false)
@@ -132,16 +135,15 @@ export function ActivityDialog({
         await updateActivity(activityToEdit.id, payload)
         toast.success('Atividade atualizada!')
       } else {
-        const result = await addActivity(payload)
-        // Se a função addActivity retornar o ID ou pudermos inferir...
-        // No contexto atual addActivity não retorna o ID, então faremos sync baseados nos dados recentes
+        await addActivity(payload)
+        toast.success('Atividade criada!')
       }
 
       if (syncGoogle && hasIntegration) {
         toast.promise(
           supabase.functions.invoke('sincronizar-google-calendar', {
             body: {
-              atividade_id: actId || 'new', // Na prática precisaríamos do ID recém-criado
+              atividade_id: actId || 'new',
               acao: activityToEdit ? 'editar' : 'criar',
             },
           }),
@@ -161,214 +163,305 @@ export function ActivityDialog({
     }
   }
 
+  const handleInputFocus = (
+    e: React.FocusEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLButtonElement
+    >,
+  ) => {
+    if (isMobile) {
+      setTimeout(() => {
+        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 300)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="p-0 sm:max-w-[500px] border-white/60 bg-white flex flex-col h-[90vh] md:h-auto max-h-[90vh]">
+        <DialogHeader className="p-4 md:p-6 border-b border-gray-100 pb-4 sticky top-0 bg-white z-10">
+          <DialogTitle className="text-xl md:text-2xl font-bold pr-8">
             {activityToEdit ? 'Editar Atividade' : 'Nova Atividade'}
           </DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Tipo</label>
-              <Select
-                value={formData.tipo}
-                onValueChange={(v) =>
-                  setFormData((p) => ({ ...p, tipo: v as TipoAtividade }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Ligação">Ligação</SelectItem>
-                  <SelectItem value="Email">Email</SelectItem>
-                  <SelectItem value="Reunião">Reunião</SelectItem>
-                  <SelectItem value="Tarefa Interna">Tarefa Interna</SelectItem>
-                  <SelectItem value="Acompanhamento">Acompanhamento</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Status</label>
-              <Select
-                value={formData.status}
-                onValueChange={(v) =>
-                  setFormData((p) => ({ ...p, status: v as StatusAtividade }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Agendada">Agendada</SelectItem>
-                  <SelectItem value="Concluída">Concluída</SelectItem>
-                  <SelectItem value="Cancelada">Cancelada</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Título</label>
-            <Input
-              required
-              value={formData.titulo}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, titulo: e.target.value }))
-              }
-              placeholder="Ex: Call de alinhamento"
-            />
-          </div>
+        <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 pb-24 md:pb-6 scrollbar-thin scrollbar-thumb-gray-200">
+          <form
+            id="activity-form"
+            onSubmit={handleSubmit}
+            className="space-y-5"
+          >
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-base md:text-sm font-medium">Tipo</label>
+                <Select
+                  value={formData.tipo}
+                  onValueChange={(v) =>
+                    setFormData((p) => ({ ...p, tipo: v as TipoAtividade }))
+                  }
+                >
+                  <SelectTrigger
+                    className="h-12 md:h-10 text-base"
+                    onFocus={handleInputFocus as any}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Ligação" className="py-3">
+                      Ligação
+                    </SelectItem>
+                    <SelectItem value="Email" className="py-3">
+                      Email
+                    </SelectItem>
+                    <SelectItem value="Reunião" className="py-3">
+                      Reunião
+                    </SelectItem>
+                    <SelectItem value="Tarefa Interna" className="py-3">
+                      Tarefa Interna
+                    </SelectItem>
+                    <SelectItem value="Acompanhamento" className="py-3">
+                      Acompanhamento
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-base md:text-sm font-medium">
+                  Status
+                </label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) =>
+                    setFormData((p) => ({ ...p, status: v as StatusAtividade }))
+                  }
+                >
+                  <SelectTrigger
+                    className="h-12 md:h-10 text-base"
+                    onFocus={handleInputFocus as any}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Agendada" className="py-3">
+                      Agendada
+                    </SelectItem>
+                    <SelectItem value="Concluída" className="py-3">
+                      Concluída
+                    </SelectItem>
+                    <SelectItem value="Cancelada" className="py-3">
+                      Cancelada
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
 
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Data e Hora</label>
+              <label className="text-base md:text-sm font-medium">
+                Título *
+              </label>
               <Input
                 required
-                type="datetime-local"
-                value={formData.data_agendada}
+                className="h-12 md:h-10 text-base"
+                value={formData.titulo}
                 onChange={(e) =>
-                  setFormData((p) => ({ ...p, data_agendada: e.target.value }))
+                  setFormData((p) => ({ ...p, titulo: e.target.value }))
                 }
+                onFocus={handleInputFocus}
+                placeholder="Ex: Call de alinhamento"
               />
             </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Responsável</label>
-              <Select
-                value={formData.responsavel_id}
-                onValueChange={(v) =>
-                  setFormData((p) => ({ ...p, responsavel_id: v }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {usuarios.map((u) => (
-                    <SelectItem key={u.id} value={u.id}>
-                      {u.nome || u.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-base md:text-sm font-medium">
+                  Data e Hora *
+                </label>
+                <Input
+                  required
+                  type="datetime-local"
+                  className="h-12 md:h-10 text-base bg-white"
+                  value={formData.data_agendada}
+                  onChange={(e) =>
+                    setFormData((p) => ({
+                      ...p,
+                      data_agendada: e.target.value,
+                    }))
+                  }
+                  onFocus={handleInputFocus}
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-base md:text-sm font-medium">
+                  Responsável
+                </label>
+                <Select
+                  value={formData.responsavel_id}
+                  onValueChange={(v) =>
+                    setFormData((p) => ({ ...p, responsavel_id: v }))
+                  }
+                >
+                  <SelectTrigger
+                    className="h-12 md:h-10 text-base"
+                    onFocus={handleInputFocus as any}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usuarios.map((u) => (
+                      <SelectItem key={u.id} value={u.id} className="py-3">
+                        {u.nome || u.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Vincular Oportunidade</label>
-            <Select
-              value={formData.oportunidade_id}
-              onValueChange={(v) =>
-                setFormData((p) => ({ ...p, oportunidade_id: v }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Nenhuma" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhuma</SelectItem>
-                {oportunidades.map((o) => (
-                  <SelectItem key={o.id} value={o.id}>
-                    {o.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Empresa</label>
+              <label className="text-base md:text-sm font-medium">
+                Vincular Oportunidade
+              </label>
               <Select
-                value={formData.empresa_id}
+                value={formData.oportunidade_id}
                 onValueChange={(v) =>
-                  setFormData((p) => ({ ...p, empresa_id: v }))
+                  setFormData((p) => ({ ...p, oportunidade_id: v }))
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger
+                  className="h-12 md:h-10 text-base"
+                  onFocus={handleInputFocus as any}
+                >
                   <SelectValue placeholder="Nenhuma" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Nenhuma</SelectItem>
-                  {companies.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
+                  <SelectItem value="none" className="py-3">
+                    Nenhuma
+                  </SelectItem>
+                  {oportunidades.map((o) => (
+                    <SelectItem key={o.id} value={o.id} className="py-3">
+                      {o.nome}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-base md:text-sm font-medium">
+                  Empresa
+                </label>
+                <Select
+                  value={formData.empresa_id}
+                  onValueChange={(v) =>
+                    setFormData((p) => ({ ...p, empresa_id: v }))
+                  }
+                >
+                  <SelectTrigger
+                    className="h-12 md:h-10 text-base"
+                    onFocus={handleInputFocus as any}
+                  >
+                    <SelectValue placeholder="Nenhuma" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="py-3">
+                      Nenhuma
+                    </SelectItem>
+                    {companies.map((c) => (
+                      <SelectItem key={c.id} value={c.id} className="py-3">
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <label className="text-base md:text-sm font-medium">
+                  Contato
+                </label>
+                <Select
+                  value={formData.contato_id}
+                  onValueChange={(v) =>
+                    setFormData((p) => ({ ...p, contato_id: v }))
+                  }
+                >
+                  <SelectTrigger
+                    className="h-12 md:h-10 text-base"
+                    onFocus={handleInputFocus as any}
+                  >
+                    <SelectValue placeholder="Nenhum" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="py-3">
+                      Nenhum
+                    </SelectItem>
+                    {contacts.map((c) => (
+                      <SelectItem key={c.id} value={c.id} className="py-3">
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <label className="text-sm font-medium">Contato</label>
-              <Select
-                value={formData.contato_id}
-                onValueChange={(v) =>
-                  setFormData((p) => ({ ...p, contato_id: v }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Nenhum" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhum</SelectItem>
-                  {contacts.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Descrição</label>
-            <Textarea
-              rows={3}
-              value={formData.descricao}
-              onChange={(e) =>
-                setFormData((p) => ({ ...p, descricao: e.target.value }))
-              }
-              placeholder="Detalhes da atividade..."
-            />
-          </div>
-
-          {hasIntegration && (
-            <div className="flex items-center space-x-2 bg-blue-50/50 p-3 rounded-lg border border-blue-100 mt-2">
-              <Checkbox
-                id="sync-google"
-                checked={syncGoogle}
-                onCheckedChange={(c) => setSyncGoogle(!!c)}
-              />
-              <label
-                htmlFor="sync-google"
-                className="text-sm font-medium text-blue-800 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-              >
-                Sincronizar com Google Calendar
+              <label className="text-base md:text-sm font-medium">
+                Descrição
               </label>
+              <Textarea
+                rows={3}
+                className="text-base md:text-sm p-3 min-h-[100px]"
+                value={formData.descricao}
+                onChange={(e) =>
+                  setFormData((p) => ({ ...p, descricao: e.target.value }))
+                }
+                onFocus={handleInputFocus}
+                placeholder="Detalhes da atividade..."
+              />
             </div>
-          )}
 
-          <div className="flex justify-end gap-2 pt-4 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-black text-white hover:bg-gray-800"
-            >
-              {loading ? 'Salvando...' : 'Salvar'}
-            </Button>
-          </div>
-        </form>
+            {hasIntegration && (
+              <div className="flex items-center space-x-3 bg-blue-50/50 p-4 md:p-3 rounded-xl md:rounded-lg border border-blue-100 mt-2">
+                <Checkbox
+                  id="sync-google"
+                  className="w-5 h-5 md:w-4 md:h-4"
+                  checked={syncGoogle}
+                  onCheckedChange={(c) => setSyncGoogle(!!c)}
+                />
+                <label
+                  htmlFor="sync-google"
+                  className="text-base md:text-sm font-medium text-blue-800 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                >
+                  Sincronizar com Google Calendar
+                </label>
+              </div>
+            )}
+          </form>
+        </div>
+
+        <div className="p-4 border-t border-gray-100 bg-gray-50 flex flex-row items-center gap-3 sticky bottom-0 z-10 w-full mt-auto">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1 h-12 md:h-10 text-base"
+            onClick={() => onOpenChange(false)}
+            disabled={loading}
+          >
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            form="activity-form"
+            disabled={loading}
+            className="flex-1 bg-black text-white hover:bg-gray-800 h-12 md:h-10 text-base"
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 md:w-4 md:h-4 mr-2 animate-spin" />
+            ) : null}
+            Salvar
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )

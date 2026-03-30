@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect } from 'react'
+import React, { useMemo, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -7,7 +7,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -34,6 +33,8 @@ import {
 } from '@/contexts/OportunidadesContext'
 import { useCompanies } from '@/contexts/CompaniesContext'
 import { useContacts } from '@/contexts/ContactsContext'
+import { useIsMobile } from '@/hooks/use-mobile'
+import { Loader2 } from 'lucide-react'
 
 const ESTAGIOS: EstagioOportunidade[] = [
   'Prospecção',
@@ -80,6 +81,8 @@ export function OportunidadeDialog({
   const { companies } = useCompanies()
   const { contacts } = useContacts()
   const [isSubmitting, setIsSubmitting] = React.useState(false)
+  const isMobile = useIsMobile()
+  const formRef = useRef<HTMLFormElement>(null)
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -175,196 +178,264 @@ export function OportunidadeDialog({
     }
   }
 
+  const handleInputFocus = (
+    e: React.FocusEvent<HTMLInputElement | HTMLButtonElement>,
+  ) => {
+    if (isMobile) {
+      setTimeout(() => {
+        e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 300)
+    }
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] glass-card border-white/60">
-        <DialogHeader>
-          <DialogTitle>
+      <DialogContent className="p-0 sm:max-w-[600px] border-white/60 bg-white">
+        <DialogHeader className="p-4 md:p-6 border-b border-gray-100 pb-4 sticky top-0 bg-white z-10">
+          <DialogTitle className="text-xl md:text-2xl font-bold pr-8">
             {oportunidadeToEdit ? 'Editar Oportunidade' : 'Nova Oportunidade'}
           </DialogTitle>
         </DialogHeader>
-        <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit)}
-            className="space-y-4 mt-4"
+
+        <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 pb-24 md:pb-6 scrollbar-thin scrollbar-thumb-gray-200">
+          <Form {...form}>
+            <form
+              ref={formRef}
+              onSubmit={form.handleSubmit(onSubmit)}
+              className="space-y-5"
+            >
+              <FormField
+                control={form.control}
+                name="nome"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base md:text-sm">
+                      Nome da Oportunidade *
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        className="h-12 md:h-10 text-base"
+                        placeholder="Ex: Contrato Anual Serviços"
+                        onFocus={handleInputFocus}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <FormField
+                  control={form.control}
+                  name="empresa_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base md:text-sm">
+                        Empresa
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger
+                            className="h-12 md:h-10 text-base"
+                            onFocus={handleInputFocus as any}
+                          >
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {companies.map((c) => (
+                            <SelectItem
+                              key={c.id}
+                              value={c.id}
+                              className="py-3"
+                            >
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="contato_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base md:text-sm">
+                        Contato
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || undefined}
+                        disabled={
+                          !selectedEmpresaId || filteredContacts.length === 0
+                        }
+                      >
+                        <FormControl>
+                          <SelectTrigger
+                            className="h-12 md:h-10 text-base"
+                            onFocus={handleInputFocus as any}
+                          >
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {filteredContacts.map((c) => (
+                            <SelectItem
+                              key={c.id}
+                              value={c.id}
+                              className="py-3"
+                            >
+                              {c.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <FormField
+                  control={form.control}
+                  name="valor_estimado"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base md:text-sm">
+                        Valor Estimado (R$)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          className="h-12 md:h-10 text-base"
+                          type="number"
+                          inputMode="decimal"
+                          step="0.01"
+                          placeholder="0.00"
+                          onFocus={handleInputFocus}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="probabilidade_percentual"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base md:text-sm">
+                        Probabilidade (%)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          className="h-12 md:h-10 text-base"
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          max="100"
+                          placeholder="50"
+                          onFocus={handleInputFocus}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <FormField
+                  control={form.control}
+                  name="data_fechamento_prevista"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base md:text-sm">
+                        Fechamento Previsto
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          type="date"
+                          className="h-12 md:h-10 text-base bg-white"
+                          onFocus={handleInputFocus}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="estagio"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-base md:text-sm">
+                        Estágio *
+                      </FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger
+                            className="h-12 md:h-10 text-base"
+                            onFocus={handleInputFocus as any}
+                          >
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {ESTAGIOS.map((estagio) => (
+                            <SelectItem
+                              key={estagio}
+                              value={estagio}
+                              className="py-3"
+                            >
+                              {estagio}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </form>
+          </Form>
+        </div>
+
+        <div className="p-4 border-t border-gray-100 bg-gray-50 flex flex-row items-center gap-3 sticky bottom-0 z-10 w-full mt-auto">
+          <Button
+            type="button"
+            variant="outline"
+            className="flex-1 h-12 md:h-10 text-base"
+            onClick={() => onOpenChange(false)}
+            disabled={isSubmitting}
           >
-            <FormField
-              control={form.control}
-              name="nome"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Nome da Oportunidade *</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Ex: Contrato Anual Serviços"
-                      {...field}
-                      className="bg-white/50"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="empresa_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Empresa</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || undefined}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-white/50">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {companies.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="contato_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Contato</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || undefined}
-                      disabled={
-                        !selectedEmpresaId || filteredContacts.length === 0
-                      }
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-white/50">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {filteredContacts.map((c) => (
-                          <SelectItem key={c.id} value={c.id}>
-                            {c.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="valor_estimado"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Valor Estimado (R$)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        placeholder="0.00"
-                        {...field}
-                        className="bg-white/50"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="probabilidade_percentual"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Probabilidade (%)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        min="0"
-                        max="100"
-                        placeholder="50"
-                        {...field}
-                        className="bg-white/50"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="data_fechamento_prevista"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fechamento Previsto</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} className="bg-white/50" />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="estagio"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Estágio *</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value || undefined}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="bg-white/50">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {ESTAGIOS.map((estagio) => (
-                          <SelectItem key={estagio} value={estagio}>
-                            {estagio}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <DialogFooter className="mt-6 pt-4 border-t border-gray-100/50">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => onOpenChange(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                className="bg-black text-white hover:bg-gray-800 rounded-xl"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Salvando...' : 'Salvar Oportunidade'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            className="flex-1 bg-black text-white hover:bg-gray-800 h-12 md:h-10 text-base"
+            disabled={isSubmitting}
+            onClick={() => {
+              if (formRef.current) formRef.current.requestSubmit()
+            }}
+          >
+            {isSubmitting ? (
+              <Loader2 className="w-5 h-5 md:w-4 md:h-4 mr-2 animate-spin" />
+            ) : null}
+            Salvar
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   )

@@ -19,6 +19,7 @@ import {
   Legend,
 } from 'recharts'
 import { FinancialSummary } from './proposal-types'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 const COLORS = [
   '#3b82f6',
@@ -31,6 +32,8 @@ const COLORS = [
 ]
 
 export function GraficosProposal({ summary }: { summary: FinancialSummary }) {
+  const isMobile = useIsMobile()
+
   const pieData = [
     { name: 'Deslocamento', value: summary.detalhamento.deslocamento },
     { name: 'Hospedagem', value: summary.detalhamento.hospedagem },
@@ -55,7 +58,7 @@ export function GraficosProposal({ summary }: { summary: FinancialSummary }) {
     },
   ]
   const barConfig = {
-    Custo: { label: 'Custo Total', color: '#ef4444' },
+    Custo: { label: 'Custo', color: '#ef4444' },
     Margem: { label: 'Margem', color: '#10b981' },
     Final: { label: 'Valor Final', color: '#3b82f6' },
   }
@@ -76,15 +79,17 @@ export function GraficosProposal({ summary }: { summary: FinancialSummary }) {
       currency: 'BRL',
     }).format(v)
 
+  const chartHeight = isMobile ? 220 : 250
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-center text-gray-600">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+      <Card className="shadow-sm border-gray-100">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold text-center text-gray-700 uppercase tracking-wider">
             Distribuição de Custos
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-[250px] pb-4">
+        <CardContent className="pb-4 px-2" style={{ height: chartHeight }}>
           {pieData.length > 0 ? (
             <ChartContainer config={pieConfig} className="w-full h-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -92,9 +97,9 @@ export function GraficosProposal({ summary }: { summary: FinancialSummary }) {
                   <Pie
                     data={pieData}
                     cx="50%"
-                    cy="50%"
-                    innerRadius={40}
-                    outerRadius={80}
+                    cy="45%"
+                    innerRadius={isMobile ? 35 : 45}
+                    outerRadius={isMobile ? 65 : 80}
                     dataKey="value"
                     stroke="none"
                   >
@@ -112,43 +117,47 @@ export function GraficosProposal({ summary }: { summary: FinancialSummary }) {
                     verticalAlign="bottom"
                     height={36}
                     iconType="circle"
-                    wrapperStyle={{ fontSize: '11px' }}
+                    wrapperStyle={{
+                      fontSize: isMobile ? '10px' : '11px',
+                      paddingTop: '10px',
+                    }}
                   />
                 </PieChart>
               </ResponsiveContainer>
             </ChartContainer>
           ) : (
             <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-              Sem dados
+              Sem dados de custo
             </div>
           )}
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-center text-gray-600">
+      <Card className="shadow-sm border-gray-100">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold text-center text-gray-700 uppercase tracking-wider">
             Composição do Valor
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-[250px] pb-4">
+        <CardContent className="pb-4 px-2" style={{ height: chartHeight }}>
           <ChartContainer config={barConfig} className="w-full h-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={barData}
-                margin={{ top: 20, right: 10, left: 10, bottom: 0 }}
+                margin={{ top: 20, right: 10, left: 0, bottom: 0 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
                   vertical={false}
                   stroke="#e5e7eb"
                 />
-                <XAxis dataKey="name" hide />
+                {!isMobile && <XAxis dataKey="name" hide />}
                 <YAxis
-                  tickFormatter={(val) => `R$${(val / 1000).toFixed(0)}k`}
-                  fontSize={10}
+                  tickFormatter={(val) => `R${(val / 1000).toFixed(0)}k`}
+                  fontSize={isMobile ? 10 : 11}
                   axisLine={false}
                   tickLine={false}
+                  width={isMobile ? 40 : 50}
                 />
                 <ChartTooltip
                   content={<ChartTooltipContent valueFormatter={fmt} />}
@@ -157,25 +166,28 @@ export function GraficosProposal({ summary }: { summary: FinancialSummary }) {
                   dataKey="Custo"
                   fill="var(--color-Custo)"
                   radius={[4, 4, 0, 0]}
-                  maxBarSize={40}
+                  maxBarSize={isMobile ? 30 : 40}
                 />
                 <Bar
                   dataKey="Margem"
                   fill="var(--color-Margem)"
                   radius={[4, 4, 0, 0]}
-                  maxBarSize={40}
+                  maxBarSize={isMobile ? 30 : 40}
                 />
                 <Bar
                   dataKey="Final"
                   fill="var(--color-Final)"
                   radius={[4, 4, 0, 0]}
-                  maxBarSize={40}
+                  maxBarSize={isMobile ? 30 : 40}
                 />
                 <Legend
                   verticalAlign="bottom"
                   height={36}
                   iconType="circle"
-                  wrapperStyle={{ fontSize: '11px' }}
+                  wrapperStyle={{
+                    fontSize: isMobile ? '10px' : '11px',
+                    paddingTop: '10px',
+                  }}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -183,18 +195,18 @@ export function GraficosProposal({ summary }: { summary: FinancialSummary }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm text-center text-gray-600">
+      <Card className="shadow-sm border-gray-100 md:col-span-2 lg:col-span-1">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold text-center text-gray-700 uppercase tracking-wider">
             Simulação de Margem
           </CardTitle>
         </CardHeader>
-        <CardContent className="h-[250px] pb-4">
+        <CardContent className="pb-4 px-2" style={{ height: chartHeight }}>
           <ChartContainer config={lineConfig} className="w-full h-full">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={lineData}
-                margin={{ top: 20, right: 10, left: 10, bottom: 0 }}
+                margin={{ top: 20, right: 10, left: 0, bottom: 0 }}
               >
                 <CartesianGrid
                   strokeDasharray="3 3"
@@ -203,10 +215,11 @@ export function GraficosProposal({ summary }: { summary: FinancialSummary }) {
                 />
                 <XAxis
                   dataKey="margem"
-                  fontSize={11}
+                  fontSize={isMobile ? 10 : 11}
                   axisLine={false}
                   tickLine={false}
-                  dy={5}
+                  dy={10}
+                  tickMargin={5}
                 />
                 <YAxis hide domain={['dataMin - 100', 'dataMax + 100']} />
                 <ChartTooltip

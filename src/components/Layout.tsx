@@ -8,7 +8,6 @@ import {
   BarChart3,
   LogOut,
   Menu,
-  X,
   Settings,
   Bell,
   Search,
@@ -17,6 +16,9 @@ import {
   FileText,
   CalendarDays,
   Zap,
+  ChevronLeft,
+  FolderOpen,
+  WifiOff,
 } from 'lucide-react'
 
 import { useAuth } from '@/hooks/use-auth'
@@ -32,6 +34,13 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { isToday, parseISO, addHours } from 'date-fns'
+import { useIsMobile } from '@/hooks/use-mobile'
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/components/ui/drawer'
 
 const NAVIGATION = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
@@ -44,16 +53,39 @@ const NAVIGATION = [
   { name: 'Atividades', href: '/activities', icon: Briefcase },
   { name: 'Automações', href: '/automations', icon: Zap },
   { name: 'Relatórios', href: '/reports', icon: BarChart3 },
+  { name: 'Documentos', href: '/documents', icon: FolderOpen },
   { name: 'Configurações', href: '/settings', icon: Settings },
 ]
 
+const BOTTOM_NAV_PATHS = [
+  '/',
+  '/proposals',
+  '/contacts',
+  '/companies',
+  '/activities',
+  '/settings',
+]
+
 export default function Layout() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
   const location = useLocation()
   const navigate = useNavigate()
   const { signOut, user, role } = useAuth()
   const { activities } = useActivities()
   const { toast } = useToast()
+  const isMobile = useIsMobile()
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false)
+    const handleOffline = () => setIsOffline(true)
+    window.addEventListener('online', handleOnline)
+    window.addEventListener('offline', handleOffline)
+    return () => {
+      window.removeEventListener('online', handleOnline)
+      window.removeEventListener('offline', handleOffline)
+    }
+  }, [])
 
   const filteredNav = useMemo(() => {
     return NAVIGATION.filter((item) => {
@@ -66,6 +98,14 @@ export default function Layout() {
       return true
     })
   }, [role])
+
+  const bottomNavItems = useMemo(() => {
+    return filteredNav.filter((item) => BOTTOM_NAV_PATHS.includes(item.href))
+  }, [filteredNav])
+
+  const extraNavItems = useMemo(() => {
+    return filteredNav.filter((item) => !BOTTOM_NAV_PATHS.includes(item.href))
+  }, [filteredNav])
 
   const myActivities = useMemo(
     () => activities.filter((a) => a.responsavel_id === user?.id),
@@ -118,106 +158,126 @@ export default function Layout() {
     navigate('/auth')
   }
 
+  const currentPageName = useMemo(() => {
+    const item = NAVIGATION.find((n) => n.href === location.pathname)
+    return item ? item.name : ''
+  }, [location.pathname])
+
   return (
     <div className="min-h-screen bg-gray-50/50 flex flex-col md:flex-row font-sans">
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity"
-          onClick={() => setSidebarOpen(false)}
-        />
+      {isOffline && (
+        <div className="fixed top-0 inset-x-0 bg-red-500 text-white text-xs text-center py-1 z-[100] flex items-center justify-center gap-2">
+          <WifiOff className="w-3 h-3" /> Você está offline.
+        </div>
       )}
 
-      <aside
+      {!isMobile && (
+        <aside className="sticky top-0 z-50 h-screen w-64 bg-white border-r border-gray-100 flex flex-col shadow-none">
+          <div className="h-16 flex items-center px-6 border-b border-gray-100 justify-center">
+            <Link
+              to="/"
+              className="flex items-center gap-2 font-bold text-xl text-gray-900 tracking-tight"
+            >
+              <div className="bg-black text-white p-1.5 rounded-lg">
+                <Target className="w-5 h-5" />
+              </div>
+              <span>LM Consultoria</span>
+            </Link>
+          </div>
+
+          <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 scrollbar-thin scrollbar-thumb-gray-200">
+            <div className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+              Menu Principal
+            </div>
+            {filteredNav.map((item) => {
+              const isActive =
+                location.pathname === item.href ||
+                (location.pathname.startsWith(item.href + '/') &&
+                  item.href !== '/')
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={cn(
+                    'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                    isActive
+                      ? 'bg-black text-white shadow-md'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
+                  )}
+                >
+                  <item.icon
+                    className={cn(
+                      'w-5 h-5',
+                      isActive ? 'text-white' : 'text-gray-500',
+                    )}
+                  />
+                  {item.name}
+                </Link>
+              )
+            })}
+          </div>
+
+          <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+            <div className="flex items-center gap-3 px-2 py-2 mb-3">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-gray-800 to-black flex items-center justify-center flex-shrink-0 shadow-sm text-white">
+                <span className="text-sm font-bold">
+                  {user?.email?.[0].toUpperCase() || 'U'}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">
+                  {user?.user_metadata?.name || 'Usuário'}
+                </p>
+                <p className="text-xs text-gray-500 truncate capitalize">
+                  {role || 'Vendedor'}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl"
+              onClick={handleSignOut}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Sair
+            </Button>
+          </div>
+        </aside>
+      )}
+
+      <div
         className={cn(
-          'fixed md:sticky top-0 z-50 h-screen w-64 bg-white border-r border-gray-100 flex flex-col transition-transform duration-300 ease-in-out shadow-sm md:shadow-none',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+          'flex-1 flex flex-col min-w-0 h-screen overflow-hidden',
+          isMobile ? 'pb-16' : '',
         )}
       >
-        <div className="h-16 flex items-center px-6 border-b border-gray-100 justify-between md:justify-center">
-          <Link
-            to="/"
-            className="flex items-center gap-2 font-bold text-xl text-gray-900 tracking-tight"
-          >
-            <div className="bg-black text-white p-1.5 rounded-lg">
-              <Target className="w-5 h-5" />
-            </div>
-            <span>LM Consultoria</span>
-          </Link>
-          <button
-            className="md:hidden text-gray-500 hover:text-gray-700"
-            onClick={() => setSidebarOpen(false)}
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto py-6 px-4 space-y-1.5 scrollbar-thin scrollbar-thumb-gray-200">
-          <div className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Menu Principal
-          </div>
-          {filteredNav.map((item) => {
-            const isActive = location.pathname === item.href
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                  isActive
-                    ? 'bg-black text-white shadow-md'
-                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900',
-                )}
-                onClick={() => setSidebarOpen(false)}
-              >
-                <item.icon
-                  className={cn(
-                    'w-5 h-5',
-                    isActive ? 'text-white' : 'text-gray-500',
-                  )}
-                />
-                {item.name}
-              </Link>
-            )
-          })}
-        </div>
-
-        <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-          <div className="flex items-center gap-3 px-2 py-2 mb-3">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-gray-800 to-black flex items-center justify-center flex-shrink-0 shadow-sm text-white">
-              <span className="text-sm font-bold">
-                {user?.email?.[0].toUpperCase() || 'U'}
-              </span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-900 truncate">
-                {user?.user_metadata?.name || 'Usuário'}
-              </p>
-              <p className="text-xs text-gray-500 truncate capitalize">
-                {role || 'Vendedor'}
-              </p>
-            </div>
-          </div>
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl"
-            onClick={handleSignOut}
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Sair
-          </Button>
-        </div>
-      </aside>
-
-      <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
         <header className="h-16 bg-white border-b border-gray-100 flex items-center justify-between px-4 sm:px-8 z-10 flex-shrink-0 shadow-sm">
-          <div className="flex items-center gap-4 flex-1">
-            <button
-              className="md:hidden text-gray-500 hover:text-gray-900 transition-colors"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="w-6 h-6" />
-            </button>
-            <div className="hidden sm:flex relative max-w-md w-full">
+          <div className="flex items-center gap-3 flex-1">
+            {isMobile && location.pathname !== '/' && (
+              <button
+                onClick={() => navigate(-1)}
+                className="text-gray-500 hover:text-gray-900 p-2 -ml-2 rounded-full hover:bg-gray-100"
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </button>
+            )}
+
+            {isMobile && location.pathname === '/' && (
+              <div className="flex items-center gap-2 font-bold text-lg text-gray-900 tracking-tight">
+                <div className="bg-black text-white p-1 rounded-md">
+                  <Target className="w-5 h-5" />
+                </div>
+                <span>LM CRM</span>
+              </div>
+            )}
+
+            {isMobile && location.pathname !== '/' && (
+              <span className="font-semibold text-gray-900 line-clamp-1">
+                {currentPageName}
+              </span>
+            )}
+
+            <div className="hidden md:flex relative max-w-md w-full ml-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 type="search"
@@ -226,17 +286,18 @@ export default function Layout() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-2 sm:gap-4 ml-4">
+
+          <div className="flex items-center gap-2">
             <Popover>
               <PopoverTrigger asChild>
                 <button className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors relative">
-                  <Bell className="w-5 h-5" />
+                  <Bell className="w-6 h-6 md:w-5 md:h-5" />
                   {todaysActivities.length > 0 && (
                     <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse" />
                   )}
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="end">
+              <PopoverContent className="w-80 p-0 mr-2 md:mr-0" align="end">
                 <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                   <h4 className="font-semibold text-sm text-gray-900">
                     Atividades de Hoje
@@ -282,7 +343,7 @@ export default function Layout() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-full text-xs font-medium"
+                    className="w-full text-xs font-medium py-3"
                     onClick={() => navigate('/my-agenda')}
                   >
                     Ver Minha Agenda Completa
@@ -290,21 +351,102 @@ export default function Layout() {
                 </div>
               </PopoverContent>
             </Popover>
-            <button
-              onClick={() => navigate('/settings')}
-              className="text-gray-400 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors hidden sm:block"
-            >
-              <Settings className="w-5 h-5" />
-            </button>
+
+            {isMobile && (
+              <button
+                className="text-gray-500 hover:text-gray-900 p-2 rounded-full hover:bg-gray-100 transition-colors"
+                onClick={() => setMobileMenuOpen(true)}
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+            )}
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-gray-50/50">
+        <main className="flex-1 overflow-y-auto p-4 sm:p-8 bg-gray-50/50 relative">
           <div className="mx-auto max-w-7xl">
             <Outlet />
           </div>
         </main>
       </div>
+
+      {isMobile && (
+        <div className="fixed bottom-0 inset-x-0 h-16 bg-white border-t border-gray-200 flex items-center justify-around z-40 pb-safe">
+          {bottomNavItems.map((item) => {
+            const isActive =
+              location.pathname === item.href ||
+              (location.pathname.startsWith(item.href + '/') &&
+                item.href !== '/')
+            return (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={cn(
+                  'flex flex-col items-center justify-center w-full h-full space-y-1 transition-colors',
+                  isActive ? 'text-black' : 'text-gray-400',
+                )}
+              >
+                <item.icon
+                  className={cn('w-6 h-6', isActive && 'fill-black/10')}
+                />
+                <span className="text-[10px] font-medium leading-none">
+                  {item.name}
+                </span>
+              </Link>
+            )
+          })}
+        </div>
+      )}
+
+      {isMobile && (
+        <Drawer open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+          <DrawerContent className="max-h-[85vh]">
+            <DrawerHeader className="border-b border-gray-100 pb-4">
+              <DrawerTitle className="text-left">Menu Adicional</DrawerTitle>
+            </DrawerHeader>
+            <div className="p-4 overflow-y-auto space-y-1">
+              {extraNavItems.map((item) => {
+                const isActive = location.pathname === item.href
+                return (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={cn(
+                      'flex items-center gap-3 px-4 py-4 rounded-xl text-base font-medium transition-all duration-200',
+                      isActive
+                        ? 'bg-black text-white shadow-md'
+                        : 'text-gray-700 hover:bg-gray-100',
+                    )}
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <item.icon
+                      className={cn(
+                        'w-6 h-6',
+                        isActive ? 'text-white' : 'text-gray-500',
+                      )}
+                    />
+                    {item.name}
+                  </Link>
+                )
+              })}
+
+              <div className="pt-6 mt-4 border-t border-gray-100">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl py-6 text-base"
+                  onClick={() => {
+                    setMobileMenuOpen(false)
+                    handleSignOut()
+                  }}
+                >
+                  <LogOut className="w-6 h-6 mr-3" />
+                  Sair
+                </Button>
+              </div>
+            </div>
+          </DrawerContent>
+        </Drawer>
+      )}
     </div>
   )
 }

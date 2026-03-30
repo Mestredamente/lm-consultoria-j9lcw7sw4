@@ -7,7 +7,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogFooter,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { ProposalStepper } from './ProposalStepper'
@@ -23,6 +22,8 @@ import {
   getCostSubtotal,
 } from './proposal-types'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 export function NewProposalModal({
   open,
@@ -36,6 +37,7 @@ export function NewProposalModal({
   proposalId?: string | null
 }) {
   const { user } = useAuth()
+  const isMobile = useIsMobile()
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [empId, setEmpId] = useState('')
@@ -153,6 +155,13 @@ export function NewProposalModal({
       toast.error('Preencha os campos obrigatórios (Empresa e Contato)')
       return
     }
+
+    // Smooth scroll to top on step change in mobile
+    if (isMobile) {
+      const modalContent = document.getElementById('proposal-modal-content')
+      if (modalContent) modalContent.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+
     setStep((s) => s + 1)
   }
 
@@ -301,25 +310,31 @@ export function NewProposalModal({
         if (!o) resetState()
       }}
     >
-      <DialogContent className="max-w-[90vw] md:max-w-4xl lg:max-w-6xl h-[90vh] md:h-[85vh] flex flex-col p-0 overflow-hidden gap-0">
-        <DialogHeader className="px-6 py-4 border-b border-border/50 bg-muted/5">
-          <DialogTitle className="text-xl">
+      <DialogContent className="w-[95vw] md:max-w-4xl lg:max-w-6xl h-[95vh] md:h-[85vh] flex flex-col p-0 overflow-hidden bg-background rounded-2xl md:rounded-lg border-white/60">
+        <DialogHeader className="px-4 py-4 md:px-6 border-b border-gray-100 bg-white sticky top-0 z-10">
+          <DialogTitle className="text-xl md:text-2xl font-bold pr-8">
             {proposalId ? 'Editar Proposta' : 'Nova Proposta'}
           </DialogTitle>
-          <DialogDescription>
-            Construa orçamentos complexos de forma guiada e estruturada.
+          <DialogDescription className="text-sm mt-1">
+            {isMobile
+              ? `Etapa ${step} de 4`
+              : 'Construa orçamentos complexos de forma guiada e estruturada.'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-background relative">
+        <div
+          id="proposal-modal-content"
+          className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50/50 relative pb-24 md:pb-6 scrollbar-thin scrollbar-thumb-gray-200"
+        >
           {loading && (
-            <div className="absolute inset-0 bg-background/50 z-50 flex items-center justify-center backdrop-blur-sm">
-              <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            <div className="absolute inset-0 bg-white/80 z-50 flex items-center justify-center backdrop-blur-sm">
+              <Loader2 className="w-8 h-8 md:w-10 md:h-10 text-black animate-spin" />
             </div>
           )}
-          <div className="max-w-6xl mx-auto pb-4">
+
+          <div className="max-w-6xl mx-auto h-full flex flex-col">
             <ProposalStepper step={step} />
-            <div className="mt-8 md:mt-10">
+            <div className="mt-6 md:mt-10 flex-1">
               {step === 1 && (
                 <ProposalStep1
                   empId={empId}
@@ -360,12 +375,21 @@ export function NewProposalModal({
           </div>
         </div>
 
-        <DialogFooter className="flex items-center justify-between w-full px-6 py-4 border-t bg-muted/5 mt-auto">
+        <div className="p-4 md:px-6 py-4 border-t bg-white sticky bottom-0 z-10 flex items-center justify-between w-full shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:shadow-none">
           <Button
             variant="outline"
-            onClick={() => setStep((s) => s - 1)}
+            onClick={() => {
+              if (isMobile) {
+                const modalContent = document.getElementById(
+                  'proposal-modal-content',
+                )
+                if (modalContent)
+                  modalContent.scrollTo({ top: 0, behavior: 'smooth' })
+              }
+              setStep((s) => s - 1)
+            }}
             disabled={step === 1 || loading}
-            className="shadow-sm"
+            className="shadow-sm h-12 md:h-10 w-[100px] md:w-auto"
           >
             Voltar
           </Button>
@@ -373,7 +397,7 @@ export function NewProposalModal({
             <Button
               onClick={handleNext}
               disabled={loading}
-              className="shadow-sm px-8"
+              className="shadow-sm h-12 md:h-10 px-6 md:px-8 bg-black hover:bg-gray-800 text-white flex-1 ml-4 md:flex-none md:ml-0"
             >
               Próximo
             </Button>
@@ -381,12 +405,15 @@ export function NewProposalModal({
             <Button
               onClick={handleSave}
               disabled={loading}
-              className="bg-green-600 hover:bg-green-700 text-white shadow-sm px-8"
+              className="bg-green-600 hover:bg-green-700 text-white shadow-sm h-12 md:h-10 px-6 md:px-8 flex-1 ml-4 md:flex-none md:ml-0"
             >
+              {loading ? (
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+              ) : null}
               {proposalId ? 'Salvar Edição' : 'Criar Proposta'}
             </Button>
           )}
-        </DialogFooter>
+        </div>
       </DialogContent>
     </Dialog>
   )
