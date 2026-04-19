@@ -30,6 +30,10 @@ import {
   XCircle,
   ChevronRight,
   Target,
+  Brain,
+  Smile,
+  Frown,
+  Meh,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -55,6 +59,7 @@ export default function OpportunityDetails() {
   const [loadingHist, setLoadingHist] = useState(false)
   const [nota, setNota] = useState('')
   const [savingNota, setSavingNota] = useState(false)
+  const [analyzingActId, setAnalyzingActId] = useState<string | null>(null)
 
   const oportunidade = oportunidades.find((o) => o.id === id)
   const relActivities = activities.filter((a) => a.oportunidade_id === id)
@@ -88,6 +93,42 @@ export default function OpportunityDetails() {
       toast.error('Erro ao salvar notas.')
     } finally {
       setSavingNota(false)
+    }
+  }
+
+  const handleAnalyzeSentiment = async (act: any) => {
+    if (!act.descricao) {
+      toast.error('Atividade sem descrição para analisar.')
+      return
+    }
+    setAnalyzingActId(act.id)
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        'analisar_sentimento_chamada',
+        {
+          body: { texto: act.descricao },
+        },
+      )
+      if (error) throw error
+
+      if (data.success) {
+        const { error: updateErr } = await supabase
+          .from('atividades')
+          .update({
+            sentimento: data.sentimento,
+            sentimento_score: data.score,
+            sentimento_analise: data.analise,
+          })
+          .eq('id', act.id)
+
+        if (updateErr) throw updateErr
+
+        toast.success('Análise de sentimento concluída!')
+      }
+    } catch (err: any) {
+      toast.error('Erro ao analisar sentimento: ' + err.message)
+    } finally {
+      setAnalyzingActId(null)
     }
   }
 
@@ -442,44 +483,122 @@ export default function OpportunityDetails() {
                         <div
                           key={act.id}
                           className={cn(
-                            'p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm',
+                            'p-4 rounded-xl border flex flex-col gap-3 shadow-sm',
                             getActivityColor(act.tipo),
                           )}
                         >
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge
-                                variant="outline"
-                                className="bg-white/50 text-xs border-current opacity-80"
-                              >
-                                {act.tipo}
-                              </Badge>
-                              <h4 className="font-bold text-sm leading-tight">
-                                {act.titulo}
-                              </h4>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge
+                                  variant="outline"
+                                  className="bg-white/50 text-xs border-current opacity-80"
+                                >
+                                  {act.tipo}
+                                </Badge>
+                                <h4 className="font-bold text-sm leading-tight">
+                                  {act.titulo}
+                                </h4>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs opacity-70 font-medium">
+                                <Calendar className="w-3 h-3" />
+                                {act.data_agendada
+                                  ? format(
+                                      parseISO(act.data_agendada),
+                                      "dd 'de' MMM, HH:mm",
+                                      { locale: ptBR },
+                                    )
+                                  : 'Sem data'}
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2 text-xs opacity-70 font-medium">
-                              <Calendar className="w-3 h-3" />
-                              {act.data_agendada
-                                ? format(
-                                    parseISO(act.data_agendada),
-                                    "dd 'de' MMM, HH:mm",
-                                    { locale: ptBR },
-                                  )
-                                : 'Sem data'}
-                            </div>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                'whitespace-nowrap self-start sm:self-auto',
+                                act.status === 'Concluída'
+                                  ? 'bg-white/60'
+                                  : 'bg-white border-transparent',
+                              )}
+                            >
+                              {act.status}
+                            </Badge>
                           </div>
-                          <Badge
-                            variant="outline"
-                            className={cn(
-                              'whitespace-nowrap self-start sm:self-auto',
-                              act.status === 'Concluída'
-                                ? 'bg-white/60'
-                                : 'bg-white border-transparent',
+
+                          {act.descricao && (
+                            <div className="text-sm text-gray-700 bg-white/40 p-3 rounded-lg border border-white/60 mt-1">
+                              {act.descricao}
+                            </div>
+                          )}
+
+                          {['Ligação', 'Reunião'].includes(act.tipo) &&
+                            act.status === 'Concluída' &&
+                            act.descricao && (
+                              <div className="mt-2 pt-3 border-t border-black/5 flex flex-col gap-2">
+                                {(act as any).sentimento ? (
+                                  <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
+                                    <div
+                                      className={cn(
+                                        'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+                                        (act as any).sentimento === 'Positivo'
+                                          ? 'bg-emerald-100 text-emerald-600'
+                                          : (act as any).sentimento ===
+                                              'Negativo'
+                                            ? 'bg-red-100 text-red-600'
+                                            : 'bg-gray-100 text-gray-600',
+                                      )}
+                                    >
+                                      {(act as any).sentimento ===
+                                      'Positivo' ? (
+                                        <Smile className="w-4 h-4" />
+                                      ) : (act as any).sentimento ===
+                                        'Negativo' ? (
+                                        <Frown className="w-4 h-4" />
+                                      ) : (
+                                        <Meh className="w-4 h-4" />
+                                      )}
+                                    </div>
+                                    <div className="flex-1">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="font-semibold text-sm text-gray-900">
+                                          Sentimento {(act as any).sentimento}
+                                        </span>
+                                        <span className="text-xs font-medium text-gray-500">
+                                          Score: {(act as any).sentimento_score}
+                                          /100
+                                        </span>
+                                      </div>
+                                      <p className="text-xs text-gray-600">
+                                        {(act as any).sentimento_analise}
+                                      </p>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex justify-end">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="bg-white hover:bg-gray-50 text-xs h-8"
+                                      onClick={() =>
+                                        handleAnalyzeSentiment(act)
+                                      }
+                                      disabled={analyzingActId === act.id}
+                                    >
+                                      {analyzingActId === act.id ? (
+                                        <span className="flex items-center gap-2">
+                                          <div className="w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />{' '}
+                                          Analisando...
+                                        </span>
+                                      ) : (
+                                        <span className="flex items-center gap-2">
+                                          <Brain className="w-3.5 h-3.5" />{' '}
+                                          Analisar Sentimento da Chamada
+                                        </span>
+                                      )}
+                                    </Button>
+                                  </div>
+                                )}
+                              </div>
                             )}
-                          >
-                            {act.status}
-                          </Badge>
                         </div>
                       ))}
                     </div>

@@ -94,7 +94,7 @@ export default function OportunidadesKanban() {
           <h1 className="text-3xl font-bold text-gray-900" translate="no">
             Pipeline de Vendas
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground" translate="no">
             Gerencie seu funil de negócios e oportunidades
           </p>
         </div>

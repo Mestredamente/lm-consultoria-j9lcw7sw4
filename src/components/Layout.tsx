@@ -164,7 +164,10 @@ export default function Layout() {
   }, [location.pathname])
 
   return (
-    <div className="min-h-screen bg-gray-50/50 flex flex-col md:flex-row font-sans">
+    <div
+      className="min-h-screen bg-gray-50/50 flex flex-col md:flex-row font-sans notranslate"
+      translate="no"
+    >
       {isOffline && (
         <div className="fixed top-0 inset-x-0 bg-red-500 text-white text-xs text-center py-1 z-[100] flex items-center justify-center gap-2">
           <WifiOff className="w-3 h-3" /> Você está offline.

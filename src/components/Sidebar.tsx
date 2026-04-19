@@ -52,7 +52,10 @@ export function Sidebar() {
   }, [role])
 
   return (
-    <aside className="fixed left-4 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col gap-4 bg-black/90 text-white py-6 px-3 rounded-full shadow-2xl shadow-black/20">
+    <aside
+      className="fixed left-4 top-1/2 -translate-y-1/2 z-50 hidden md:flex flex-col gap-4 bg-black/90 text-white py-6 px-3 rounded-full shadow-2xl shadow-black/20 notranslate"
+      translate="no"
+    >
       {filteredNavItems.map((item) => {
         const isActive = location.pathname === item.path
         return (

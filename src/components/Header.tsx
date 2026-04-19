@@ -18,7 +18,10 @@ export function Header() {
   const location = useLocation()
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 md:px-10 glass-card mx-4 mt-4 rounded-full sticky top-4 z-40">
+    <header
+      className="flex items-center justify-between px-6 py-4 md:px-10 glass-card mx-4 mt-4 rounded-full sticky top-4 z-40 notranslate"
+      translate="no"
+    >
       <div className="flex items-center gap-8">
         <Link to="/" className="flex items-center gap-2">
           <div className="h-8 w-8 bg-black rounded-lg flex items-center justify-center">
