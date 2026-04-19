@@ -1,22 +1,22 @@
 {
   "_versions": {
     "enviar_cobranca_whatsapp": 17,
-    "enviar_lembrete_consulta": 21,
+    "enviar_lembrete_consulta": 22,
     "emitir_nota_fiscal": 5,
     "enviar_comunicado_massa": 5,
     "transcrever_audio": 3,
     "processar_cobrancas_recorrentes": 5,
     "functions": 6,
-    "lembrete_sessao": 9,
+    "lembrete_sessao": 10,
     "gerar_insights_paciente": 4,
     "gerar_sugestao_evolucao": 2,
-    "processar_pagamento": 4,
+    "processar_pagamento": 5,
     "sugerir_horario_ia": 2,
     "criar_checkout_stripe": 5,
-    "stripe_webhook": 3,
+    "stripe_webhook": 4,
     "gerar_link_sala_virtual": 4,
-    "enviar_mensagem_whatsapp": 8,
-    "executar_automacao": 6,
+    "enviar_mensagem_whatsapp": 9,
+    "executar_automacao": 7,
     "gerar-pdf-proposta": 2,
     "enviar-proposta-email": 3,
     "rastrear-visualizacao-proposta": 2,
@@ -30,6 +30,13 @@
     "gerar-recomendacoes-ia": 2,
     "notificar-reunioes": 1,
     "gerar-precificacao-ia": 1,
-    "gerar-followup-ia": 1
+    "gerar-followup-ia": 1,
+    "excluir_usuario": 1,
+    "convidar_usuario": 1,
+    "renovar_assinaturas": 1,
+    "bloquear_assinaturas_vencidas": 1,
+    "excluir_minha_conta": 1,
+    "gerar_convite": 1,
+    "audit_logger": 1
   }
 }
